@@ -8,9 +8,12 @@ AI 시대 정부홍보가 대량 노출 중심 캠페인에서 상태 기반 마
 - AI는 시민을 단순한 인구집단이 아니라 행동 가능성, 신뢰도, 정보 부족, 불안, 장벽 같은 상태로 분류할 수 있습니다.
 - 상태가 달라지면 같은 정책도 다른 메시지, 다른 근거, 다른 행동 제안을 필요로 합니다.
 - 개인화가 강해질수록 효과는 높아질 수 있지만 설득압력, 불투명성, 형평성 위험도 함께 커질 수 있습니다.
+- YouTube 성과 수집기 예시는 배포된 콘텐츠의 공개 성과지표를 API로 모아 다음 메시지 실험에 연결하는 흐름을 보여줍니다.
 
 이 앱은 AI 홍보가 단순히 콘텐츠를 빨리 만드는 문제가 아니라, 시민에게 어떤 정보 환경을 제공할 것인가의 문제임을 예시합니다.
 
 ## GitHub Pages
 
-배포 주소: https://cnucho.github.io/ai-sidae-hongbo/
+메시지 생성 데모: https://cnucho.github.io/ai-sidae-hongbo/
+
+YouTube 성과 수집기 예시: https://cnucho.github.io/ai-sidae-hongbo/youtube_collector.html

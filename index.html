@@ -93,6 +93,30 @@
       white-space: nowrap;
     }
 
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .top-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      color: #35413a;
+      font-size: 13px;
+      font-weight: 900;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
     .status-dot {
       width: 9px;
       height: 9px;
@@ -696,6 +720,11 @@
         white-space: normal;
       }
 
+      .top-actions,
+      .top-link {
+        width: 100%;
+      }
+
       .workspace,
       .right-column {
         grid-template-columns: 1fr;
@@ -720,9 +749,12 @@
         <p class="eyebrow">AI 시대 정부홍보</p>
         <h1>세그먼트 홍보에서 상태 기반 마이크로 타겟팅으로</h1>
       </div>
-      <div class="status-pill" aria-live="polite">
-        <span class="status-dot"></span>
-        <span id="liveStatus">실험 대기 중</span>
+      <div class="top-actions">
+        <a class="top-link" href="youtube_collector.html">성과 수집기 예시</a>
+        <div class="status-pill" aria-live="polite">
+          <span class="status-dot"></span>
+          <span id="liveStatus">실험 대기 중</span>
+        </div>
       </div>
     </header>
 
