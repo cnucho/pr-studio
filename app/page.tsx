@@ -4,16 +4,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
+  BookOpen,
   Bot,
   BrainCircuit,
   CheckCircle2,
   ChevronRight,
   Clapperboard,
   Code2,
+  ClipboardCheck,
   Download,
   FileText,
   Gauge,
   KeyRound,
+  Languages,
   Loader2,
   Megaphone,
   MessageSquareText,
@@ -38,14 +41,24 @@ import {
   analyzeNews,
   createPressRelease,
   createYoutubeKit,
+  createWritingKit,
   type NewsAnalysisOutput,
   type PressInput,
   type PressOutput,
+  type WritingInput,
+  type WritingOutput,
   type YoutubeInput,
   type YoutubeOutput,
 } from "@/lib/engines";
 
-type TabKey = "film" | "press" | "news" | "youtube" | "targeting" | "performance";
+type TabKey =
+  | "film"
+  | "press"
+  | "news"
+  | "youtube"
+  | "writing"
+  | "targeting"
+  | "performance";
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -81,15 +94,25 @@ const sampleYoutubeInput: YoutubeInput = {
   durationMinutes: "6",
 };
 
+const sampleWritingInput: WritingInput = {
+  sourceText:
+    "청년 지역정착 패키지는 지역 기업 일자리 연계, 주거비 지원, 생활 기반 상담을 통합 제공하는 정책이다. 총 120억 원을 투입해 청년의 초기 정착 비용을 낮추고 지역 기업의 인재 확보를 돕는다. 신청 절차 간소화와 대상자 맞춤 안내가 핵심이며, 성과 지표 공개를 통해 정책 신뢰를 높인다.",
+  audience: "정책 담당자, 기자, 일반 시민",
+  purpose: "AI 검색 친화 정책 설명문과 내부 검토 보고서 초안",
+  evidenceNotes: "R1 보도자료 초안, R2 예산 설명자료, R3 지역 기업 의견, R4 청년 정착 통계",
+};
+
 const demoPress = createPressRelease(samplePressInput);
 const demoNews = analyzeNews(sampleArticles);
 const demoYoutube = createYoutubeKit(sampleYoutubeInput);
+const demoWriting = createWritingKit(sampleWritingInput);
 
 const tabs = [
   { key: "film" as const, label: "영상 스튜디오", icon: Clapperboard },
   { key: "press" as const, label: "보도자료", icon: FileText },
   { key: "news" as const, label: "뉴스 분석", icon: Newspaper },
   { key: "youtube" as const, label: "유튜브 제작", icon: Youtube },
+  { key: "writing" as const, label: "AI 글쓰기", icon: BookOpen },
   { key: "targeting" as const, label: "타겟팅 전략", icon: Target },
   { key: "performance" as const, label: "성과 수집", icon: Gauge },
 ];
@@ -302,27 +325,34 @@ const scenes = [
   },
   {
     eyebrow: "Demo 4",
+    title: "AI 친화 글쓰기 설계",
+    narration:
+      "정책자료를 AI 검색과 보고서 검토에 맞게 다시 구조화합니다. 답변 우선형, 근거 순회형, 주의점 우선형, FAQ 의미망형 중 어떤 프레임이 적합한지 제안합니다.",
+    visual: <WritingMini output={demoWriting} />,
+  },
+  {
+    eyebrow: "Demo 5",
     title: "상태 기반 마이크로타겟팅",
     narration:
       "같은 정책 대상자라도 실제 상태는 다릅니다. 정보 부족, 불신, 행동 장벽에 따라 메시지와 근거, 다음 행동을 다르게 설계해야 합니다.",
     visual: <TargetingMini />,
   },
   {
-    eyebrow: "Demo 5",
+    eyebrow: "Demo 6",
     title: "성과가 다음 메시지를 바꿉니다",
     narration:
       "유튜브 공개 성과지표를 수집해 어떤 제목, 썸네일, 메시지 약속이 반응을 만들었는지 비교하고 다음 실험으로 연결합니다.",
     visual: <PerformanceMini />,
   },
   {
-    eyebrow: "Scene 9",
+    eyebrow: "Scene 10",
     title: "경쟁의 축이 바뀝니다",
     narration:
       "앞으로의 경쟁은 홍보전문가 대 개발자가 아닙니다. AI를 활용하는 홍보전문가와 그렇지 않은 홍보전문가의 경쟁입니다.",
     visual: <FutureFlow />,
   },
   {
-    eyebrow: "Scene 10",
+    eyebrow: "Scene 11",
     title: "홍보용 AI를 만드는 홍보담당자",
     narration:
       "이제 역할이 바뀝니다. 보도자료를 작성하는 홍보담당자에서, 홍보용 AI를 만드는 홍보담당자로. 이 변화가 새로운 기준이 됩니다.",
@@ -363,7 +393,7 @@ export default function Home() {
                 AI 시대 홍보 전략 플랫폼
               </p>
               <h1 className="text-xl font-semibold tracking-normal md:text-2xl">
-                콘텐츠 생성, 타겟팅 전략, 성과 학습을 하나의 흐름으로
+                콘텐츠 생성, AI 글쓰기, 타겟팅 전략, 성과 학습을 하나의 흐름으로
               </h1>
             </div>
           </div>
@@ -386,7 +416,7 @@ export default function Home() {
           </div>
         </header>
 
-        <nav className="grid gap-2 rounded-lg border border-line bg-white p-2 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
+        <nav className="grid gap-2 rounded-lg border border-line bg-white p-2 shadow-sm sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.key;
@@ -422,6 +452,7 @@ export default function Home() {
             {activeTab === "press" && <PressReleaseTool />}
             {activeTab === "news" && <NewsAnalyzerTool />}
             {activeTab === "youtube" && <YoutubeContentTool />}
+            {activeTab === "writing" && <WritingKitTool />}
             {activeTab === "targeting" && <MicroTargetingTool />}
             {activeTab === "performance" && <PerformanceCollectorTool />}
           </motion.section>
@@ -846,6 +877,77 @@ function YoutubeContentTool() {
         </section>
         <ResultPanel empty={!output} error={error}>
           {output && <YoutubeResult output={output} />}
+        </ResultPanel>
+      </div>
+    </ToolShell>
+  );
+}
+
+function WritingKitTool() {
+  const [form, setForm] = useState<WritingInput>(sampleWritingInput);
+  const [output, setOutput] = useState<WritingOutput | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function generate() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await postJson<WritingOutput>("/api/writing-kit", form);
+      setOutput(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "처리에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <ToolShell
+      title="AI 친화 글쓰기 설계"
+      eyebrow="Report & GEO Writer"
+      icon={<BookOpen className="h-5 w-5" />}
+      action={
+        <button
+          type="button"
+          onClick={generate}
+          disabled={loading}
+          className="focus-ring flex h-11 items-center gap-2 rounded-md bg-cobalt px-4 text-sm font-semibold text-white transition hover:bg-cobalt/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
+          설계
+        </button>
+      }
+    >
+      <div className="grid gap-5 xl:grid-cols-[460px_1fr]">
+        <section className="rounded-lg border border-line bg-white p-4">
+          <div className="grid gap-4">
+            <TextArea
+              label="정책/홍보 자료"
+              value={form.sourceText}
+              rows={11}
+              onChange={(value) => setForm({ ...form, sourceText: value })}
+            />
+            <Field
+              label="독자"
+              value={form.audience}
+              onChange={(value) => setForm({ ...form, audience: value })}
+            />
+            <Field
+              label="목적"
+              value={form.purpose}
+              onChange={(value) => setForm({ ...form, purpose: value })}
+            />
+            <TextArea
+              label="출처/근거 메모"
+              value={form.evidenceNotes}
+              rows={4}
+              onChange={(value) => setForm({ ...form, evidenceNotes: value })}
+            />
+          </div>
+        </section>
+        <ResultPanel empty={!output} error={error}>
+          {output && <WritingResult output={output} />}
         </ResultPanel>
       </div>
     </ToolShell>
@@ -1473,6 +1575,142 @@ function NewsAnalysisResult({ output }: { output: NewsAnalysisOutput }) {
   );
 }
 
+function WritingResult({ output }: { output: WritingOutput }) {
+  return (
+    <div className="grid gap-4">
+      <article className="rounded-lg border border-line p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+              Recommended Frame
+            </p>
+            <h3 className="mt-2 text-3xl font-semibold leading-tight tracking-normal">
+              {output.recommendedFrame}
+            </h3>
+          </div>
+          <span className="w-fit rounded-md bg-cobalt/10 px-3 py-2 text-sm font-bold text-cobalt">
+            {output.title}
+          </span>
+        </div>
+        <p className="mt-4 text-sm font-medium leading-relaxed text-ink/72">
+          {output.summary}
+        </p>
+      </article>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {output.frames.map((frame) => (
+          <div key={frame.id} className="rounded-lg border border-line p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <Languages className="h-4 w-4 text-cobalt" />
+                {frame.label}
+              </div>
+              <span className="rounded-full bg-paper px-2 py-1 text-xs font-bold">
+                {frame.fit} 적합도
+              </span>
+            </div>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-ink/68">
+              {frame.useWhen}
+            </p>
+            <div className="mt-3 grid gap-2">
+              {frame.outline.map((item) => (
+                <p key={item} className="rounded-md bg-paper px-3 py-2 text-sm font-semibold">
+                  {item}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <article className="rounded-lg border border-line p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-mint">
+          Draft Structure
+        </p>
+        <h3 className="mt-2 text-2xl font-semibold leading-tight">
+          {output.draft.headline}
+        </h3>
+        <p className="mt-3 text-sm font-medium leading-relaxed text-ink/72">
+          {output.draft.lead}
+        </p>
+        <div className="mt-4 grid gap-3">
+          {output.draft.sections.map((section) => (
+            <div key={section.heading} className="rounded-md border border-line p-3">
+              <h4 className="text-sm font-bold">{section.heading}</h4>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-ink/70">
+                {section.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-lg border border-line p-4">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <MessageSquareText className="h-4 w-4 text-coral" />
+            FAQ 의미망
+          </div>
+          <div className="mt-3 grid gap-3">
+            {output.faq.map((item) => (
+              <div key={item.question} className="rounded-md bg-paper p-3">
+                <p className="text-sm font-bold">{item.question}</p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-ink/68">
+                  {item.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-4">
+          <AssetList
+            title="검증 체크리스트"
+            items={output.verificationChecklist}
+            icon={<ClipboardCheck className="h-4 w-4 text-mint" />}
+          />
+          <AssetList
+            title="출처 경고"
+            items={output.sourceWarnings}
+            icon={<ShieldCheck className="h-4 w-4 text-amber" />}
+          />
+        </div>
+      </div>
+
+      <article className="rounded-lg border border-ink bg-ink p-5 text-white">
+        <div className="flex items-center gap-2 text-sm font-bold">
+          <BookOpen className="h-4 w-4" />
+          ReportDesk / gWriter Handoff
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-md bg-white/10 p-3">
+            <p className="text-xs font-bold text-white/60">Brief</p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-white/82">
+              {output.handoff.reportDeskBrief}
+            </p>
+          </div>
+          <div className="rounded-md bg-white/10 p-3">
+            <p className="text-xs font-bold text-white/60">Verification Mode</p>
+            <p className="mt-2 text-sm font-semibold">{output.handoff.gWriterMode}</p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-white/82">
+              {output.handoff.exportGate}
+            </p>
+          </div>
+          <div className="rounded-md bg-white/10 p-3">
+            <p className="text-xs font-bold text-white/60">Source Packet</p>
+            <div className="mt-2 grid gap-2">
+              {output.handoff.sourcePacket.map((item) => (
+                <p key={item} className="text-sm font-medium leading-relaxed text-white/82">
+                  {item}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  );
+}
+
 function YoutubeResult({ output }: { output: YoutubeOutput }) {
   return (
     <div className="grid gap-4">
@@ -1846,6 +2084,47 @@ function YoutubeMini({ output }: { output: YoutubeOutput }) {
           {["쇼츠 문안", "썸네일 문구", "블로그 글"].map((item, index) => (
             <div key={item} className="flex items-center gap-3 rounded-md bg-paper px-3 py-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-sm font-bold text-white">
+                {index + 1}
+              </span>
+              <span className="font-semibold">{item}</span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function WritingMini({ output }: { output: WritingOutput }) {
+  return (
+    <div className="grid h-full items-center gap-4 md:grid-cols-[0.9fr_1.1fr]">
+      <motion.div
+        className="rounded-lg border border-line bg-white p-5 shadow-sm"
+        initial={{ opacity: 0, x: -18 }}
+        animate={{ opacity: 1, x: 0 }}
+      >
+        <p className="text-sm font-bold text-cobalt">추천 글쓰기 프레임</p>
+        <h3 className="mt-2 text-3xl font-semibold">{output.recommendedFrame}</h3>
+        <div className="mt-4 grid gap-2">
+          {output.frames.slice(0, 3).map((frame) => (
+            <div key={frame.id} className="grid grid-cols-[1fr_52px] items-center gap-3 rounded-md bg-paper px-3 py-2">
+              <span className="text-sm font-semibold">{frame.label}</span>
+              <span className="text-right text-sm font-bold text-cobalt">{frame.fit}</span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+      <motion.div
+        className="rounded-lg border border-line bg-white p-5 shadow-sm"
+        initial={{ opacity: 0, x: 18 }}
+        animate={{ opacity: 1, x: 0 }}
+      >
+        <p className="text-sm font-bold text-mint">검증형 초안 구조</p>
+        <h3 className="mt-2 text-2xl font-semibold leading-tight">{output.draft.headline}</h3>
+        <div className="mt-4 grid gap-3">
+          {["FAQ 의미망", "출처 경고", "gWriter handoff"].map((item, index) => (
+            <div key={item} className="flex items-center gap-3 rounded-md bg-paper px-3 py-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-mint text-sm font-bold text-white">
                 {index + 1}
               </span>
               <span className="font-semibold">{item}</span>

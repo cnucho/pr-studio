@@ -124,6 +124,14 @@ try {
   await page.waitForTimeout(700);
   await captureViewport(page, "youtube-output.png");
 
+  await clickUnique(page, "button", "AI 글쓰기");
+  await page.waitForTimeout(600);
+  await captureViewport(page, "writing-input.png");
+  await clickUnique(page, "button", "설계");
+  await page.getByText("ReportDesk / gWriter Handoff", { exact: true }).waitFor();
+  await page.waitForTimeout(700);
+  await captureViewport(page, "writing-output.png");
+
   await clickUnique(page, "button", "타겟팅 전략");
   await page.getByText("상태 기반 마이크로타겟팅", { exact: true }).waitFor();
   await page.waitForTimeout(700);
@@ -136,11 +144,11 @@ try {
 
   await clickUnique(page, "button", "영상 스튜디오");
   await page.waitForTimeout(500);
-  await captureStage(page, "9 경쟁의 축이 바뀝니다", "scene-09-future.png");
+  await captureStage(page, "10 경쟁의 축이 바뀝니다", "scene-10-future.png");
   await captureStage(
     page,
-    "10 홍보용 AI를 만드는 홍보담당자",
-    "scene-10-final.png",
+    "11 홍보용 AI를 만드는 홍보담당자",
+    "scene-11-final.png",
   );
 } finally {
   await browser.close();

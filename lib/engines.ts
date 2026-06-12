@@ -84,6 +84,49 @@ export type YoutubeOutput = {
   };
 };
 
+export type WritingInput = {
+  sourceText: string;
+  audience: string;
+  purpose: string;
+  evidenceNotes: string;
+};
+
+export type WritingFrame = {
+  id: "answer_first" | "evidence_walkthrough" | "caution_first" | "faq_semantic";
+  label: string;
+  fit: number;
+  useWhen: string;
+  outline: string[];
+  checks: string[];
+};
+
+export type WritingOutput = {
+  title: string;
+  recommendedFrame: string;
+  summary: string;
+  frames: WritingFrame[];
+  draft: {
+    headline: string;
+    lead: string;
+    sections: Array<{
+      heading: string;
+      body: string;
+    }>;
+  };
+  faq: Array<{
+    question: string;
+    answer: string;
+  }>;
+  verificationChecklist: string[];
+  sourceWarnings: string[];
+  handoff: {
+    reportDeskBrief: string;
+    gWriterMode: string;
+    exportGate: string;
+    sourcePacket: string[];
+  };
+};
+
 const positiveWords = [
   "확대",
   "개선",
@@ -182,6 +225,23 @@ function toSlug(value: string) {
       .replace(/[^0-9a-z가-힣]+/gi, "-")
       .replace(/^-+|-+$/g, "") || "policy-pr-video"
   );
+}
+
+function extractSentences(text: string, max = 5) {
+  return text
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?다요])\s+|[;\n]+/u)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length >= 12)
+    .slice(0, max);
+}
+
+function evidenceSensitiveSentences(text: string, max = 4) {
+  return extractSentences(text, 12)
+    .filter((sentence) =>
+      /[0-9]|%|원|억|만|증가|감소|확대|축소|비교|최대|최소|효과|성과/.test(sentence),
+    )
+    .slice(0, max);
 }
 
 function scoreText(text: string) {
@@ -414,6 +474,144 @@ export function createYoutubeKit(input: YoutubeInput): YoutubeOutput {
         "비공개 API 키, 내부 문서, 개인 정보가 화면에 나오지 않는지 확인",
         "각 클릭과 화면 전환은 자막이 읽힐 만큼 충분히 유지",
         "음성 녹음 후 대본을 맞추기보다 실제 클릭 흐름을 먼저 녹화한 뒤 내레이션 작성",
+      ],
+    },
+  };
+}
+
+export function createWritingKit(input: WritingInput): WritingOutput {
+  const sourceText = clean(
+    input.sourceText,
+    "청년 지역정착 패키지는 지역 기업 일자리 연계, 주거비 지원, 생활 기반 상담을 통합 제공하는 정책이다. 총 120억 원을 투입해 청년의 초기 정착 비용을 낮추고 지역 기업의 인재 확보를 돕는다.",
+  );
+  const audience = clean(input.audience, "정책 담당자와 일반 시민");
+  const purpose = clean(input.purpose, "AI 검색 친화 정책 설명문");
+  const evidenceNotes = clean(
+    input.evidenceNotes,
+    "보도자료 초안, 예산 설명자료, 언론 보도, 공식 통계 링크를 R1, R2, R3처럼 출처 ID로 정리",
+  );
+  const keywords = extractKeywords(sourceText, 6);
+  const core = keywords[0] ?? "정책";
+  const second = keywords[1] ?? "지원";
+  const third = keywords[2] ?? "효과";
+  const evidenceSentences = evidenceSensitiveSentences(sourceText);
+  const hasEvidenceRisk = evidenceSentences.length > 0;
+  const wantsReport = /보고서|리포트|검토|분석|근거|출처/.test(purpose);
+  const wantsSearch = /검색|GEO|AI|블로그|게시|노출|FAQ/i.test(purpose);
+
+  const frameCandidates: WritingFrame[] = [
+    {
+      id: "answer_first",
+      label: "답변 우선형",
+      fit: wantsSearch ? 94 : 82,
+      useWhen: "검색·요약·AI 답변에서 첫 문장만 읽혀도 핵심이 전달되어야 할 때",
+      outline: [
+        `${core}의 한 문장 답변`,
+        `${audience}이 바로 확인할 대상과 혜택`,
+        `신청·문의·후속 행동`,
+      ],
+      checks: ["첫 단락 3문장 이내", "정책명·대상·행동을 첫 화면에 배치", "모호한 홍보 문구보다 확인 가능한 사실 우선"],
+    },
+    {
+      id: "evidence_walkthrough",
+      label: "근거 순회형",
+      fit: hasEvidenceRisk || wantsReport ? 91 : 78,
+      useWhen: "표, 예산, 수치, 기사 프레임을 순서대로 해석해야 할 때",
+      outline: [
+        `자료에서 확인되는 ${core}`,
+        `${second} 관련 수치와 근거`,
+        `${third}를 판단할 후속 지표`,
+      ],
+      checks: ["수치 문장마다 출처 ID 부여", "표본·기간·단위 표시", "해석과 사실을 문단에서 분리"],
+    },
+    {
+      id: "caution_first",
+      label: "주의점 우선형",
+      fit: hasEvidenceRisk ? 89 : 72,
+      useWhen: "예산, 형평성, 비교 가능성, 표본 한계를 먼저 밝혀 신뢰를 지켜야 할 때",
+      outline: [
+        "먼저 확인해야 할 한계",
+        `${core} 설명에서 오해가 생길 수 있는 지점`,
+        "그래도 말할 수 있는 결론",
+      ],
+      checks: ["과장 표현 제거", "비교 기준 명시", "정책 효과와 기대효과를 구분"],
+    },
+    {
+      id: "faq_semantic",
+      label: "FAQ 의미망형",
+      fit: wantsSearch ? 90 : 80,
+      useWhen: "AI 검색, 챗봇, 상담 스크립트가 질문-답변 단위로 내용을 재사용해야 할 때",
+      outline: [
+        `${core}는 무엇인가`,
+        "누가 대상인가",
+        "어떻게 신청하고 무엇을 확인해야 하는가",
+      ],
+      checks: ["질문은 시민 표현으로 작성", "답변은 2~4문장으로 제한", "관련 질문끼리 용어를 일관되게 사용"],
+    },
+  ];
+  const frames = frameCandidates.sort((a, b) => b.fit - a.fit);
+
+  const recommended = frames[0];
+  const sourceWarnings =
+    evidenceSentences.length > 0
+      ? evidenceSentences.map((sentence) => `출처 확인 필요: ${sentence}`)
+      : ["수치·기간·대상·비교 표현이 추가되면 출처 ID를 붙여 다시 확인"];
+
+  return {
+    title: `${core} 설명문 설계안`,
+    recommendedFrame: recommended.label,
+    summary: `${purpose} 목적에 맞춰 ${recommended.label}을 우선 추천합니다. ${audience}에게는 ${core}, ${second}, ${third}를 한 흐름으로 설명하되, 검증 가능한 근거와 후속 행동을 분리해 제시하는 것이 좋습니다.`,
+    frames,
+    draft: {
+      headline: `${core}, ${audience}이 먼저 알아야 할 핵심`,
+      lead: `${core}는 ${audience}이 정책의 필요성과 이용 방법을 빠르게 이해하도록 구조화해 설명해야 합니다. 핵심은 ${second}이며, 실제 설득력은 ${third}를 어떤 근거로 확인할 수 있는지에 달려 있습니다.`,
+      sections: [
+        {
+          heading: "1. 한 문장 답변",
+          body: `${core}는 복잡한 행정 설명보다 ${audience}이 지금 확인해야 할 대상, 혜택, 행동을 먼저 보여 주는 방식으로 전달해야 합니다.`,
+        },
+        {
+          heading: "2. 근거와 해석",
+          body: `${evidenceNotes}. 특히 ${second} 관련 수치와 비교 표현은 출처 ID를 붙여 사실과 해석을 분리합니다.`,
+        },
+        {
+          heading: "3. 다음 행동",
+          body: `마지막에는 신청, 문의, 자료 확인처럼 ${audience}이 바로 실행할 수 있는 행동을 남깁니다. ${third}는 성과 지표로 추적해 다음 홍보 메시지에 반영합니다.`,
+        },
+      ],
+    },
+    faq: [
+      {
+        question: `${core}는 왜 필요한가요?`,
+        answer: `${audience}이 겪는 정보 부족과 행동 장벽을 줄이고, ${second}를 더 쉽게 연결하기 위해 필요합니다.`,
+      },
+      {
+        question: "무엇을 먼저 확인해야 하나요?",
+        answer: "대상 조건, 신청 절차, 문의 채널, 그리고 수치나 예산의 공식 출처를 먼저 확인해야 합니다.",
+      },
+      {
+        question: "AI가 이 글을 잘 이해하게 하려면 어떻게 써야 하나요?",
+        answer: "첫 단락에 핵심 답을 쓰고, 표·수치·근거를 출처 ID와 함께 분리하며, FAQ처럼 재사용 가능한 질문 단위를 함께 둡니다.",
+      },
+    ],
+    verificationChecklist: [
+      "정책명, 대상, 기간, 예산, 신청 절차가 서로 충돌하지 않는지 확인",
+      "수치·비교·성과 문장에는 R1, R2 같은 출처 ID를 붙임",
+      "홍보 주장과 검증된 사실을 같은 문장에 섞지 않음",
+      "AI 검색 재사용을 위해 제목, 소제목, FAQ 질문에 핵심 용어를 반복",
+      "최종 공개 전 미확인 출처와 과장 표현을 별도 게이트에서 검토",
+    ],
+    sourceWarnings,
+    handoff: {
+      reportDeskBrief: `${purpose}를 위한 storyline-first brief: ${core}를 답변 우선으로 설명하고, ${second} 근거와 ${third} 지표를 출처 ID로 검토한 뒤 공개용 초안을 작성`,
+      gWriterMode: wantsReport ? "Policy L4 verification" : "Business L3 verification",
+      exportGate: hasEvidenceRisk
+        ? "수치·예산·효과 문장의 출처 관계가 남아 있으면 강한 경고 후 내보내기"
+        : "출처 없는 주장과 반복 표현을 점검한 뒤 내보내기",
+      sourcePacket: [
+        `R1 후보: ${evidenceNotes}`,
+        `핵심 키워드: ${keywords.slice(0, 5).join(", ")}`,
+        `검토 문장: ${sourceWarnings.slice(0, 2).join(" / ")}`,
       ],
     },
   };
