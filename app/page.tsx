@@ -52,6 +52,7 @@ import {
 } from "@/lib/engines";
 
 type TabKey =
+  | "agent"
   | "film"
   | "press"
   | "news"
@@ -64,6 +65,42 @@ type ApiResponse<T> = {
   ok: boolean;
   output: T;
   error?: string;
+};
+
+type VideoAgentPlanStep = {
+  title: string;
+  detail: string;
+  tool: "plan" | "capture" | "render" | "verify";
+};
+
+type VideoAgentRunStep = {
+  title: string;
+  command: string;
+  status: "completed" | "failed";
+  durationMs: number;
+  output: string;
+};
+
+type VideoAgentOutput = {
+  plan: {
+    mode: "gpt" | "local";
+    model: string;
+    summary: string;
+    viewerPromise: string;
+    steps: VideoAgentPlanStep[];
+    qualityChecks: string[];
+    note?: string;
+  };
+  runSteps: VideoAgentRunStep[];
+  video: {
+    path: string;
+    downloadUrl: string;
+    width: number;
+    height: number;
+    duration: number;
+    size: number;
+    generatedAt: string;
+  };
 };
 
 const samplePressInput: PressInput = {
@@ -102,12 +139,16 @@ const sampleWritingInput: WritingInput = {
   evidenceNotes: "R1 보도자료 초안, R2 예산 설명자료, R3 지역 기업 의견, R4 청년 정착 통계",
 };
 
+const defaultAgentBrief =
+  "PR Studio가 홍보담당자를 위해 보도자료, 뉴스 분석, 유튜브 제작, AI 글쓰기, 타겟팅, 성과 수집을 한 번에 연결하고, 마지막에 YouTube용 MP4까지 생성하는 흐름을 보여 주세요.";
+
 const demoPress = createPressRelease(samplePressInput);
 const demoNews = analyzeNews(sampleArticles);
 const demoYoutube = createYoutubeKit(sampleYoutubeInput);
 const demoWriting = createWritingKit(sampleWritingInput);
 
 const tabs = [
+  { key: "agent" as const, label: "AI Agent", icon: Bot },
   { key: "film" as const, label: "영상 스튜디오", icon: Clapperboard },
   { key: "press" as const, label: "보도자료", icon: FileText },
   { key: "news" as const, label: "뉴스 분석", icon: Newspaper },
@@ -118,6 +159,7 @@ const tabs = [
 ];
 
 const tabDescriptions: Record<TabKey, string> = {
+  agent: "GPT가 계획하고 앱이 MP4를 만듭니다.",
   film: "전체 홍보 흐름을 16:9 영상 시퀀스로 점검합니다.",
   press: "정책 핵심 정보를 보도자료, SNS 요약, 언론 대응 포인트로 정리합니다.",
   news: "기사 원문을 프레임, 정서, 쟁점, 브리핑 보고서로 바꿉니다.",
@@ -128,10 +170,42 @@ const tabDescriptions: Record<TabKey, string> = {
 };
 
 const studioStats = [
-  { label: "Tools", value: "7" },
-  { label: "Output", value: "PR Pack" },
+  { label: "Tools", value: "8" },
+  { label: "Output", value: "Agent MP4" },
   { label: "Format", value: "16:9" },
 ];
+
+const agentProgress = [
+  "GPT 제작 계획",
+  "앱 화면 캡처",
+  "MP4 렌더링",
+  "영상 검증",
+];
+
+function fallbackPlanStepsForUi(): VideoAgentPlanStep[] {
+  return [
+    {
+      title: "제작 계획",
+      detail: "브리프를 읽고 YouTube 데모의 메시지와 화면 순서를 정합니다.",
+      tool: "plan",
+    },
+    {
+      title: "화면 캡처",
+      detail: "PR Studio의 실제 탭과 생성 결과를 브라우저에서 캡처합니다.",
+      tool: "capture",
+    },
+    {
+      title: "MP4 렌더링",
+      detail: "캡처 이미지, 내레이션, 자막을 16:9 영상으로 조립합니다.",
+      tool: "render",
+    },
+    {
+      title: "검증",
+      detail: "완성 파일의 해상도, 길이, 크기를 확인합니다.",
+      tool: "verify",
+    },
+  ];
+}
 
 type Objective = "reach" | "trust" | "action";
 
@@ -278,6 +352,23 @@ function engagementRate(row: VideoMetricRow) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
+}
+
+function formatFileSize(value: number) {
+  if (value >= 1024 * 1024) {
+    return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  }
+  if (value >= 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+  return `${value} B`;
+}
+
+function formatVideoDuration(seconds: number) {
+  const total = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(total / 60);
+  const remain = total % 60;
+  return `${minutes}:${String(remain).padStart(2, "0")}`;
 }
 
 function parseVideoIds(value: string) {
@@ -505,7 +596,7 @@ export default function Home() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-cobalt">{activeTabMeta.label}</p>
-                    <h2 className="mt-1 text-2xl font-semibold leading-tight md:text-3xl">
+                    <h2 className="mt-1 text-2xl font-semibold leading-tight [word-break:keep-all] md:text-3xl">
                       {tabDescriptions[activeTab]}
                     </h2>
                   </div>
@@ -527,6 +618,7 @@ export default function Home() {
                 transition={{ duration: 0.24, ease: "easeOut" }}
               >
                 {activeTab === "film" && <FilmStudio />}
+                {activeTab === "agent" && <AgentStudio />}
                 {activeTab === "press" && <PressReleaseTool />}
                 {activeTab === "news" && <NewsAnalyzerTool />}
                 {activeTab === "youtube" && <YoutubeContentTool />}
@@ -1179,6 +1271,244 @@ function MicroTargetingTool() {
               <p className="mt-3 text-sm font-medium leading-relaxed text-ink/70">
                 {selected.risk}
               </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </ToolShell>
+  );
+}
+
+function AgentStudio() {
+  const [brief, setBrief] = useState(defaultAgentBrief);
+  const [output, setOutput] = useState<VideoAgentOutput | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    if (!loading) return;
+
+    setPhase(0);
+    const timer = window.setInterval(() => {
+      setPhase((current) => Math.min(current + 1, agentProgress.length - 1));
+    }, 16000);
+
+    return () => window.clearInterval(timer);
+  }, [loading]);
+
+  async function runAgent() {
+    setLoading(true);
+    setError("");
+    setOutput(null);
+
+    try {
+      const response = await fetch("/api/video-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brief }),
+      });
+      const data = (await response.json()) as ApiResponse<VideoAgentOutput>;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? "영상 생성에 실패했습니다.");
+      }
+
+      setOutput(data.output);
+      setPhase(agentProgress.length - 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "영상 생성에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const previewUrl = output
+    ? `${output.video.downloadUrl}?v=${encodeURIComponent(output.video.generatedAt)}`
+    : "";
+  const generatedAt = output
+    ? new Date(output.video.generatedAt).toLocaleString("ko-KR", { hour12: false })
+    : "";
+
+  return (
+    <ToolShell
+      title="PR Studio Agent"
+      eyebrow="GPT Production Agent"
+      icon={<Bot className="h-5 w-5" />}
+      action={
+        <button
+          type="button"
+          onClick={runAgent}
+          disabled={loading}
+          className="focus-ring flex h-11 items-center gap-2 rounded-md bg-cobalt px-4 text-sm font-semibold text-white transition hover:bg-cobalt/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          영상 생성
+        </button>
+      }
+    >
+      <div className="grid gap-5 xl:grid-cols-[430px_1fr]">
+        <section className="grid gap-4 rounded-lg border border-line bg-white p-4 shadow-soft">
+          <TextArea label="Agent Brief" value={brief} rows={8} onChange={setBrief} />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { label: "Plan", value: "GPT" },
+              { label: "Capture", value: "Playwright" },
+              { label: "Render", value: "FFmpeg" },
+              { label: "Verify", value: "ffprobe" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-line bg-canvas p-3">
+                <p className="text-xs font-bold uppercase text-ink/44">{item.label}</p>
+                <p className="mt-1 text-sm font-semibold">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-lg border border-line bg-ink p-4 text-white">
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <Code2 className="h-4 w-4 text-amber" />
+              Allowed Tools
+            </div>
+            <div className="mt-3 grid gap-2">
+              {agentProgress.map((item, index) => {
+                const complete = output || (loading && index < phase);
+                const active = loading && index === phase;
+
+                return (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 rounded-md bg-white/8 px-3 py-2 text-sm font-semibold"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/12">
+                      {complete ? (
+                        <CheckCircle2 className="h-4 w-4 text-mint" />
+                      ) : active ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-amber" />
+                      ) : (
+                        <ClipboardCheck className="h-4 w-4 text-white/52" />
+                      )}
+                    </span>
+                    {item}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4">
+          {error && (
+            <div className="rounded-lg border border-coral/30 bg-coral/10 px-4 py-3 text-sm font-semibold text-coral">
+              {error}
+            </div>
+          )}
+
+          <div className="rounded-lg border border-line bg-white p-4 shadow-soft">
+            {output ? (
+              <div className="grid gap-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-cobalt/10 px-3 py-1 text-xs font-bold text-cobalt">
+                        {output.plan.mode === "gpt" ? `GPT · ${output.plan.model}` : "Local Planner"}
+                      </span>
+                      <span className="rounded-full bg-mint/10 px-3 py-1 text-xs font-bold text-mint">
+                        {generatedAt}
+                      </span>
+                    </div>
+                    <h3 className="mt-3 text-2xl font-semibold">{output.plan.viewerPromise}</h3>
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-ink/64">
+                      {output.plan.summary}
+                    </p>
+                    {output.plan.note && (
+                      <p className="mt-2 rounded-md bg-paper px-3 py-2 text-sm font-semibold text-ink/58">
+                        {output.plan.note}
+                      </p>
+                    )}
+                  </div>
+                  <a
+                    href={previewUrl}
+                    download="pr-studio-final.mp4"
+                    className="focus-ring flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-ink/90"
+                  >
+                    <Download className="h-4 w-4" />
+                    MP4
+                  </a>
+                </div>
+
+                <video
+                  controls
+                  src={previewUrl}
+                  className="aspect-video w-full rounded-lg border border-line bg-ink"
+                />
+
+                <div className="grid gap-3 md:grid-cols-4">
+                  <Metric label="해상도" value={`${output.video.width}×${output.video.height}`} tone="cobalt" />
+                  <Metric label="길이" value={formatVideoDuration(output.video.duration)} tone="mint" />
+                  <Metric label="크기" value={formatFileSize(output.video.size)} tone="coral" />
+                  <Metric label="상태" value="완료" tone="ink" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[430px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-canvas px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white text-cobalt shadow-soft">
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Radio className="h-8 w-8" />}
+                </div>
+                <p className="mt-4 text-xl font-semibold">
+                  {loading ? agentProgress[phase] : "Agent 대기 중"}
+                </p>
+                <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-ink/58">
+                  {loading
+                    ? "앱이 실제 화면을 캡처하고 MP4를 렌더링하는 중입니다."
+                    : "브리프를 기준으로 제작 계획, 화면 캡처, 렌더링, 검증까지 실행합니다."}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+            <div className="rounded-lg border border-line bg-white p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <BrainCircuit className="h-4 w-4 text-cobalt" />
+                Agent Plan
+              </div>
+              <div className="grid gap-2">
+                {(output?.plan.steps ?? fallbackPlanStepsForUi()).map((step, index) => (
+                  <div key={`${step.title}-${index}`} className="rounded-md border border-line bg-canvas p-3">
+                    <p className="text-sm font-semibold">{step.title}</p>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-ink/58">{step.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-line bg-white p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <ClipboardCheck className="h-4 w-4 text-mint" />
+                Run Log
+              </div>
+              <div className="grid gap-2">
+                {output ? (
+                  output.runSteps.map((step) => (
+                    <div key={step.title} className="rounded-md border border-line p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold">{step.title}</p>
+                        <span className="rounded-full bg-mint/10 px-2 py-1 text-xs font-bold text-mint">
+                          {(step.durationMs / 1000).toFixed(1)}s
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-xs font-medium text-ink/44">{step.command}</p>
+                    </div>
+                  ))
+                ) : (
+                  agentProgress.map((item, index) => (
+                    <div key={item} className="rounded-md border border-line bg-canvas p-3 text-sm font-semibold">
+                      {String(index + 1).padStart(2, "0")} · {item}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </section>
