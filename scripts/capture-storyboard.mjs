@@ -36,13 +36,20 @@ const appUrl =
   "http://127.0.0.1:3016";
 
 async function waitForApp(page) {
-  await page.goto(appUrl, { waitUntil: "load" });
-  await page.getByText("PR Studio | 홍보물제작소", { exact: true }).waitFor();
+  await page.goto(appUrl, { waitUntil: "networkidle" });
+  await page.locator("body", { hasText: "PR Studio" }).waitFor();
+  await page.locator("body", { hasText: "홍보물제작소" }).waitFor();
+  await page.locator("[data-tab-key='film']").waitFor();
+  await page.waitForTimeout(1200);
 }
 
 async function captureStage(page, buttonName, filename) {
-  await page.getByRole("button", { name: buttonName, exact: true }).click();
-  await page.waitForTimeout(1100);
+  const titleText = buttonName.replace(/^\d+\s+/, "");
+  const locator = page.getByRole("button").filter({ hasText: titleText }).first();
+  await locator.waitFor();
+  await locator.click();
+  await page.locator(".stage-aspect h2", { hasText: titleText }).waitFor();
+  await page.waitForTimeout(950);
   await page.addStyleTag({
     content: ".caption-glass{display:none!important}",
   });
@@ -66,6 +73,41 @@ async function clickUnique(page, role, name) {
     throw new Error(`${name} 요소 수가 ${count}개입니다.`);
   }
   await locator.click();
+}
+
+async function clickPrimaryNav(page, name) {
+  const tabKeys = new Map([
+    ["영상 스튜디오", { key: "film", text: "영상 스튜디오" }],
+    ["보도자료", { key: "press", text: "보도자료 작성기" }],
+    ["뉴스 분석", { key: "news", text: "뉴스 분석기" }],
+    ["유튜브 제작", { key: "youtube", text: "유튜브 콘텐츠 작성기" }],
+    ["AI 글쓰기", { key: "writing", text: "AI 친화 글쓰기 설계" }],
+    ["타겟팅 전략", { key: "targeting", text: "상태 기반 마이크로타겟팅" }],
+    ["성과 수집", { key: "performance", text: "YouTube 성과 수집기" }],
+  ]);
+  const tab = tabKeys.get(name);
+  if (!tab) {
+    throw new Error(`${name} 탭 키를 찾을 수 없습니다.`);
+  }
+
+  const navButton = page.locator(`[data-tab-key="${tab.key}"]`);
+  await navButton.waitFor({ state: "visible" });
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await navButton.click();
+    try {
+      await page.locator(`[data-tab-key="${tab.key}"][data-active="true"]`).waitFor({
+        timeout: 2200,
+      });
+      await page.locator("body", { hasText: tab.text }).waitFor({ timeout: 2200 });
+      await page.waitForTimeout(650);
+      return;
+    } catch {
+      await page.waitForTimeout(500);
+    }
+  }
+
+  throw new Error(`${name} 탭으로 이동하지 못했습니다.`);
 }
 
 await mkdir(outDir, { recursive: true });
@@ -100,7 +142,7 @@ try {
     "scene-03-market.png",
   );
 
-  await clickUnique(page, "button", "보도자료");
+  await clickPrimaryNav(page, "보도자료");
   await page.waitForTimeout(600);
   await captureViewport(page, "press-input.png");
   await clickUnique(page, "button", "생성");
@@ -108,7 +150,7 @@ try {
   await page.waitForTimeout(700);
   await captureViewport(page, "press-output.png");
 
-  await clickUnique(page, "button", "뉴스 분석");
+  await clickPrimaryNav(page, "뉴스 분석");
   await page.waitForTimeout(600);
   await captureViewport(page, "news-input.png");
   await clickUnique(page, "button", "분석");
@@ -116,7 +158,7 @@ try {
   await page.waitForTimeout(700);
   await captureViewport(page, "news-output.png");
 
-  await clickUnique(page, "button", "유튜브 제작");
+  await clickPrimaryNav(page, "유튜브 제작");
   await page.waitForTimeout(600);
   await captureViewport(page, "youtube-input.png");
   await clickUnique(page, "button", "생성");
@@ -124,7 +166,7 @@ try {
   await page.waitForTimeout(700);
   await captureViewport(page, "youtube-output.png");
 
-  await clickUnique(page, "button", "AI 글쓰기");
+  await clickPrimaryNav(page, "AI 글쓰기");
   await page.waitForTimeout(600);
   await captureViewport(page, "writing-input.png");
   await clickUnique(page, "button", "설계");
@@ -132,17 +174,17 @@ try {
   await page.waitForTimeout(700);
   await captureViewport(page, "writing-output.png");
 
-  await clickUnique(page, "button", "타겟팅 전략");
+  await clickPrimaryNav(page, "타겟팅 전략");
   await page.getByText("상태 기반 마이크로타겟팅", { exact: true }).waitFor();
   await page.waitForTimeout(700);
   await captureViewport(page, "targeting-strategy.png");
 
-  await clickUnique(page, "button", "성과 수집");
+  await clickPrimaryNav(page, "성과 수집");
   await page.getByText("YouTube 성과 수집기", { exact: true }).waitFor();
   await page.waitForTimeout(700);
   await captureViewport(page, "performance-collector.png");
 
-  await clickUnique(page, "button", "영상 스튜디오");
+  await clickPrimaryNav(page, "영상 스튜디오");
   await page.waitForTimeout(500);
   await captureStage(page, "10 경쟁의 축이 바뀝니다", "scene-10-future.png");
   await captureStage(

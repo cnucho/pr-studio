@@ -380,6 +380,10 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+function isTabKey(value: string | null): value is TabKey {
+  return tabs.some((tab) => tab.key === value);
+}
+
 async function postJson<T>(url: string, payload: unknown) {
   const response = await fetch(url, {
     method: "POST",
@@ -397,6 +401,20 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabKey>("film");
   const activeTabMeta = tabs.find((tab) => tab.key === activeTab) ?? tabs[0];
   const ActiveIcon = activeTabMeta.icon;
+
+  useEffect(() => {
+    const nextTab = new URLSearchParams(window.location.search).get("tab");
+    if (isTabKey(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, []);
+
+  function selectTab(tab: TabKey) {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", url);
+  }
 
   return (
     <main className="min-h-screen text-ink">
@@ -450,7 +468,9 @@ export default function Home() {
                   <button
                     key={tab.key}
                     type="button"
-                    onClick={() => setActiveTab(tab.key)}
+                    data-tab-key={tab.key}
+                    data-active={active ? "true" : "false"}
+                    onClick={() => selectTab(tab.key)}
                     className={cx(
                       "focus-ring group flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition",
                       active
