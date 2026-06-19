@@ -13,9 +13,9 @@ const audioDir = path.join(assetRoot, "audio");
 const clipDir = path.join(assetRoot, "clips");
 const textDir = path.join(assetRoot, "narration");
 const outDir = path.join(root, "out");
-const draftPath = path.join(outDir, "ai-sidae-hongbo-draft.mp4");
+const draftPath = path.join(outDir, "pr-studio-draft.mp4");
 const subtitlePath = path.join(assetRoot, "subtitles.ass");
-const finalPath = path.join(outDir, "ai-sidae-hongbo-final.mp4");
+const finalPath = path.join(outDir, "pr-studio-final.mp4");
 
 const clips = [
   {

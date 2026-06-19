@@ -390,7 +390,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cobalt">
-                AI 시대 홍보 전략 플랫폼
+                PR Studio | 홍보물제작소
               </p>
               <h1 className="text-xl font-semibold tracking-normal md:text-2xl">
                 콘텐츠 생성, AI 글쓰기, 타겟팅 전략, 성과 학습을 하나의 흐름으로

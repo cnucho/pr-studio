@@ -37,7 +37,7 @@ const appUrl =
 
 async function waitForApp(page) {
   await page.goto(appUrl, { waitUntil: "load" });
-  await page.getByText("AI 시대 홍보 전략 플랫폼", { exact: true }).waitFor();
+  await page.getByText("PR Studio | 홍보물제작소", { exact: true }).waitFor();
 }
 
 async function captureStage(page, buttonName, filename) {

@@ -1,14 +1,16 @@
-# AI 시대 홍보 전략 플랫폼
+# PR Studio (홍보물제작소)
 
-정책홍보 콘텐츠 생성, 상태 기반 마이크로타겟팅, YouTube 성과 수집을 하나의 흐름으로 통합한 데모 플랫폼입니다.
+PR Studio는 보도자료, 뉴스 분석, 영상 기획, AI 글쓰기, 타겟팅 전략, YouTube 성과 학습을 하나의 흐름으로 묶은 홍보 제작 스튜디오입니다.
+
+한국어 별칭은 `홍보물제작소`입니다. 한국 사용자에게는 쉽고 친근하게, 외국 사용자에게는 `PR Studio`라는 이름으로 바로 이해되도록 정리했습니다.
 
 ## 통합 범위
 
-- `pr-ai-demo-studio`의 Next 기반 실제 동작형 앱을 기본 구조로 흡수했습니다.
-- 기존 `ai-sidae-hongbo`의 정부홍보 마이크로타겟팅 데모와 YouTube 성과 수집기를 앱 탭으로 통합했습니다.
+- 기존 `pr-ai-demo-studio` 실험과 `ai-sidae-hongbo`의 정부홍보 마이크로타겟팅 데모를 하나의 Next 앱으로 정리했습니다.
+- 정적 YouTube 성과 수집기와 기존 홍보 데모는 앱 탭과 레거시 자료로 통합했습니다.
 - `AIAnalysisConferencePresentation`은 별도 repo로 유지하고, YouTube 메타데이터, 자막 파일명, 녹화 체크리스트 같은 제작 워크플로만 YouTube 결과 패키지에 반영했습니다.
 - `ai-report-editor`, `reportDesk`, `gWriter Verify`는 별도 제품으로 유지하고, AI 검색 친화 글쓰기 프레임, storyline-first brief, 출처/검증 게이트, gWriter handoff 원칙만 `AI 글쓰기` 탭에 흡수했습니다.
-- 기존 정적 HTML 원본은 `legacy/ai-sidae-hongbo-static/`에 보존했습니다.
+- 기존 정적 HTML 원본은 `legacy/pr-studio-static/`에 보존했습니다.
 
 ## 주요 기능
 
@@ -43,4 +45,4 @@ npm run dev
 
 ## 원격 repo
 
-통합 대상 원격 저장소: https://github.com/cnucho/ai-sidae-hongbo
+원격 저장소: https://github.com/cnucho/pr-studio
