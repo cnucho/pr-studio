@@ -117,6 +117,22 @@ const tabs = [
   { key: "performance" as const, label: "성과 수집", icon: Gauge },
 ];
 
+const tabDescriptions: Record<TabKey, string> = {
+  film: "전체 홍보 흐름을 16:9 영상 시퀀스로 점검합니다.",
+  press: "정책 핵심 정보를 보도자료, SNS 요약, 언론 대응 포인트로 정리합니다.",
+  news: "기사 원문을 프레임, 정서, 쟁점, 브리핑 보고서로 바꿉니다.",
+  youtube: "정책자료를 영상 대본, 쇼츠, 썸네일, 게시 패키지로 확장합니다.",
+  writing: "AI 검색과 검증형 보고서에 맞는 글 구조를 설계합니다.",
+  targeting: "시민 상태별 메시지, 근거, 다음 행동을 비교합니다.",
+  performance: "YouTube 공개 지표로 다음 메시지 실험을 설계합니다.",
+};
+
+const studioStats = [
+  { label: "Tools", value: "7" },
+  { label: "Output", value: "PR Pack" },
+  { label: "Format", value: "16:9" },
+];
+
 type Objective = "reach" | "trust" | "action";
 
 type CitizenProfile = {
@@ -379,84 +395,128 @@ async function postJson<T>(url: string, payload: unknown) {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabKey>("film");
+  const activeTabMeta = tabs.find((tab) => tab.key === activeTab) ?? tabs[0];
+  const ActiveIcon = activeTabMeta.icon;
 
   return (
-    <main className="min-h-screen px-5 py-5 text-ink md:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-        <header className="flex flex-col gap-4 rounded-lg border border-line bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-ink text-white">
-              <BrainCircuit className="h-5 w-5" />
+    <main className="min-h-screen text-ink">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-4 md:px-6 lg:px-8">
+        <header className="rounded-lg border border-line bg-white px-4 py-4 shadow-soft md:px-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-ink text-white shadow-brand">
+                <BrainCircuit className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-semibold md:text-xl">PR Studio</p>
+                  <span className="rounded-full bg-cobalt/10 px-2.5 py-1 text-xs font-bold text-cobalt">
+                    홍보물제작소
+                  </span>
+                </div>
+                <h1 className="mt-1 text-base font-medium leading-relaxed text-ink/68 md:text-lg">
+                  좋은 홍보물은 전략, 글, 영상, 성과가 한 화면에서 이어질 때 만들어집니다.
+                </h1>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cobalt">
-                PR Studio | 홍보물제작소
-              </p>
-              <h1 className="text-xl font-semibold tracking-normal md:text-2xl">
-                콘텐츠 생성, AI 글쓰기, 타겟팅 전략, 성과 학습을 하나의 흐름으로
-              </h1>
+            <div className="grid grid-cols-3 gap-2 text-center sm:w-[360px]">
+              {studioStats.map((stat) => (
+                <div key={stat.label} className="rounded-lg border border-line bg-canvas px-3 py-2">
+                  <p className="text-xs font-bold text-ink/50">{stat.label}</p>
+                  <p className="mt-1 text-sm font-semibold">{stat.value}</p>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs font-medium">
-            <span className="rounded-full border border-line px-3 py-1.5">
-              1080p 16:9
-            </span>
-            <span className="rounded-full border border-line px-3 py-1.5">
-              TTS
-            </span>
-            <span className="rounded-full border border-line px-3 py-1.5">
-              자동 자막
-            </span>
-            <span className="rounded-full border border-line px-3 py-1.5">
-              실제 입력-출력
-            </span>
-            <span className="rounded-full border border-line px-3 py-1.5">
-              전략-성과 루프
-            </span>
           </div>
         </header>
 
-        <nav className="grid gap-2 rounded-lg border border-line bg-white p-2 shadow-sm sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.key;
+        <div className="grid gap-5 lg:grid-cols-[276px_minmax(0,1fr)]">
+          <aside className="rounded-lg border border-line bg-white p-3 shadow-soft lg:sticky lg:top-4 lg:self-start">
+            <div className="mb-3 rounded-lg bg-ink p-4 text-white">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Sparkles className="h-4 w-4 text-amber" />
+                Production Flow
+              </div>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-white/72">
+                기획에서 배포 후 학습까지 한 번에 정리합니다.
+              </p>
+            </div>
+            <nav className="grid gap-1.5">
+              {tabs.map((tab, index) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.key;
 
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={cx(
-                  "focus-ring flex h-12 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition",
-                  active
-                    ? "bg-ink text-white"
-                    : "text-ink/70 hover:bg-paper hover:text-ink",
-                )}
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={cx(
+                      "focus-ring group flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition",
+                      active
+                        ? "bg-cobalt text-white shadow-brand"
+                        : "text-ink/66 hover:bg-canvas hover:text-ink",
+                    )}
+                  >
+                    <span
+                      className={cx(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition",
+                        active ? "bg-white/18" : "bg-canvas text-ink/58 group-hover:bg-white",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">{tab.label}</span>
+                    <span className={cx("text-xs", active ? "text-white/70" : "text-ink/34")}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          <div className="min-w-0">
+            <section className="mb-5 rounded-lg border border-line bg-white p-4 shadow-soft md:p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas text-cobalt">
+                    <ActiveIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-cobalt">{activeTabMeta.label}</p>
+                    <h2 className="mt-1 text-2xl font-semibold leading-tight md:text-3xl">
+                      {tabDescriptions[activeTab]}
+                    </h2>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs font-bold text-ink/60">
+                  <span className="rounded-full bg-mint/10 px-3 py-1.5 text-mint">Ready</span>
+                  <span className="rounded-full bg-cobalt/10 px-3 py-1.5 text-cobalt">Main</span>
+                  <span className="rounded-full bg-coral/10 px-3 py-1.5 text-coral">PR Studio</span>
+                </div>
+              </div>
+            </section>
+
+            <AnimatePresence mode="wait">
+              <motion.section
+                key={activeTab}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.24, ease: "easeOut" }}
               >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <AnimatePresence mode="wait">
-          <motion.section
-            key={activeTab}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
-          >
-            {activeTab === "film" && <FilmStudio />}
-            {activeTab === "press" && <PressReleaseTool />}
-            {activeTab === "news" && <NewsAnalyzerTool />}
-            {activeTab === "youtube" && <YoutubeContentTool />}
-            {activeTab === "writing" && <WritingKitTool />}
-            {activeTab === "targeting" && <MicroTargetingTool />}
-            {activeTab === "performance" && <PerformanceCollectorTool />}
-          </motion.section>
-        </AnimatePresence>
+                {activeTab === "film" && <FilmStudio />}
+                {activeTab === "press" && <PressReleaseTool />}
+                {activeTab === "news" && <NewsAnalyzerTool />}
+                {activeTab === "youtube" && <YoutubeContentTool />}
+                {activeTab === "writing" && <WritingKitTool />}
+                {activeTab === "targeting" && <MicroTargetingTool />}
+                {activeTab === "performance" && <PerformanceCollectorTool />}
+              </motion.section>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </main>
   );
@@ -496,7 +556,7 @@ function FilmStudio() {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+    <div className="grid items-start gap-5 lg:grid-cols-[1fr_320px]">
       <section className="rounded-lg border border-line bg-white p-4 shadow-studio">
         <div className="stage-aspect relative overflow-hidden rounded-lg border border-line bg-[#fbfaf6]">
           <div className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold shadow-sm">
@@ -506,21 +566,21 @@ function FilmStudio() {
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
-              className="absolute inset-0 flex flex-col px-8 pb-32 pt-8 md:px-10 md:pb-36 md:pt-10"
+              className="absolute inset-0 flex flex-col px-6 pb-36 pt-6 md:px-8 md:pb-32 md:pt-7"
               initial={{ opacity: 0, scale: 0.985 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.015 }}
               transition={{ duration: 0.42, ease: "easeOut" }}
             >
-              <div className="mb-5 mt-8 max-w-3xl">
-                <p className="text-sm font-bold uppercase tracking-[0.14em] text-coral">
+              <div className="mb-3 mt-8 max-w-2xl md:mt-7">
+                <p className="text-sm font-bold uppercase text-coral">
                   {scene.eyebrow}
                 </p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-normal text-ink md:text-5xl">
+                <h2 className="mt-2 text-2xl font-semibold leading-tight text-ink md:text-4xl">
                   {scene.title}
                 </h2>
               </div>
-              <div className="min-h-0 flex-1">{scene.visual}</div>
+              <div className="min-h-0 flex-1 overflow-hidden">{scene.visual}</div>
             </motion.div>
           </AnimatePresence>
           <div className="caption-glass absolute bottom-0 left-0 right-0 z-20 px-6 py-4 text-white">
@@ -1036,10 +1096,10 @@ function MicroTargetingTool() {
           <article className="rounded-lg border border-line bg-white p-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+                <p className="text-xs font-bold uppercase text-cobalt">
                   {objectiveLabels[objective]}
                 </p>
-                <h3 className="mt-2 text-3xl font-semibold tracking-normal">
+                <h3 className="mt-2 text-3xl font-semibold">
                   {selected.strategy}
                 </h3>
               </div>
@@ -1341,17 +1401,17 @@ function ToolShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-line bg-paper p-4 shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-line bg-white px-4 py-4 md:flex-row md:items-center md:justify-between">
+    <section className="grid gap-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-line bg-white px-4 py-4 shadow-soft md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md bg-ink text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-ink text-white">
             {icon}
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+            <p className="text-xs font-bold uppercase text-cobalt">
               {eyebrow}
             </p>
-            <h2 className="text-2xl font-semibold tracking-normal">{title}</h2>
+            <h2 className="text-2xl font-semibold">{title}</h2>
           </div>
         </div>
         {action}
@@ -1371,12 +1431,12 @@ function Field({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-semibold">
+    <label className="grid gap-2 text-sm font-semibold text-ink/76">
       {label}
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium"
+        className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition hover:border-cobalt/45"
       />
     </label>
   );
@@ -1394,13 +1454,13 @@ function TextArea({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-semibold">
+    <label className="grid gap-2 text-sm font-semibold text-ink/76">
       {label}
       <textarea
         value={value}
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
-        className="focus-ring rounded-md border border-line bg-white px-3 py-3 text-sm font-medium leading-relaxed"
+        className="focus-ring thin-scrollbar rounded-md border border-line bg-white px-3 py-3 text-sm font-medium leading-relaxed shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition hover:border-cobalt/45"
       />
     </label>
   );
@@ -1416,18 +1476,20 @@ function ResultPanel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="min-h-[520px] rounded-lg border border-line bg-white p-4">
+    <section className="min-h-[520px] rounded-lg border border-line bg-white p-4 shadow-soft">
       {error && (
         <div className="mb-4 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm font-semibold text-coral">
           {error}
         </div>
       )}
       {empty ? (
-        <div className="flex min-h-[470px] flex-col items-center justify-center rounded-md border border-dashed border-line bg-paper text-center">
-          <Bot className="h-10 w-10 text-cobalt" />
+        <div className="flex min-h-[470px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-canvas px-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-white text-cobalt shadow-soft">
+            <Bot className="h-7 w-7" />
+          </div>
           <p className="mt-3 text-lg font-semibold">결과 대기 중</p>
           <p className="mt-1 text-sm font-medium text-ink/58">
-            입력값을 바꾼 뒤 생성 버튼을 누르세요.
+            입력값을 바꾸면 이곳에 결과 패키지가 정리됩니다.
           </p>
         </div>
       ) : (
@@ -1441,10 +1503,10 @@ function PressReleaseResult({ output }: { output: PressOutput }) {
   return (
     <div className="grid gap-4">
       <article className="rounded-lg border border-line p-5">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+        <p className="text-xs font-bold uppercase text-cobalt">
           보도자료
         </p>
-        <h3 className="mt-2 text-3xl font-semibold leading-tight tracking-normal">
+        <h3 className="mt-2 text-3xl font-semibold leading-tight">
           {output.headline}
         </h3>
         <p className="mt-2 text-base font-semibold text-ink/70">{output.subhead}</p>
@@ -1581,10 +1643,10 @@ function WritingResult({ output }: { output: WritingOutput }) {
       <article className="rounded-lg border border-line p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+            <p className="text-xs font-bold uppercase text-cobalt">
               Recommended Frame
             </p>
-            <h3 className="mt-2 text-3xl font-semibold leading-tight tracking-normal">
+            <h3 className="mt-2 text-3xl font-semibold leading-tight">
               {output.recommendedFrame}
             </h3>
           </div>
@@ -1624,7 +1686,7 @@ function WritingResult({ output }: { output: WritingOutput }) {
       </div>
 
       <article className="rounded-lg border border-line p-5">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-mint">
+        <p className="text-xs font-bold uppercase text-mint">
           Draft Structure
         </p>
         <h3 className="mt-2 text-2xl font-semibold leading-tight">
@@ -1715,10 +1777,10 @@ function YoutubeResult({ output }: { output: YoutubeOutput }) {
   return (
     <div className="grid gap-4">
       <article className="rounded-lg border border-line p-5">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-coral">
+        <p className="text-xs font-bold uppercase text-coral">
           Video Script
         </p>
-        <h3 className="mt-2 text-3xl font-semibold leading-tight tracking-normal">
+        <h3 className="mt-2 text-3xl font-semibold leading-tight">
           {output.videoTitle}
         </h3>
         <p className="mt-3 rounded-md bg-coral/10 px-3 py-2 text-sm font-semibold text-coral">
@@ -1814,7 +1876,7 @@ function Metric({
 
   return (
     <div className={cx("rounded-lg p-4", colors[tone])}>
-      <p className="text-xs font-bold uppercase tracking-[0.12em] opacity-75">
+      <p className="text-xs font-bold uppercase opacity-75">
         {label}
       </p>
       <p className="mt-2 text-xl font-semibold">{value}</p>
@@ -1877,11 +1939,11 @@ function LegacyPipeline() {
 
   return (
     <div className="flex h-full items-center justify-center">
-      <div className="grid w-full max-w-5xl grid-cols-1 items-center gap-3 md:grid-cols-[1fr_48px_1fr_48px_1fr_48px_1fr]">
+      <div className="grid w-full max-w-5xl grid-cols-2 items-center gap-3 md:grid-cols-[1fr_48px_1fr_48px_1fr_48px_1fr]">
         {steps.map((step, index) => (
           <div key={step} className="contents">
             <motion.div
-              className="flex h-28 items-center justify-center rounded-lg border border-line bg-white text-xl font-semibold shadow-sm"
+              className="flex h-20 items-center justify-center rounded-lg border border-line bg-white px-3 text-center text-base font-semibold shadow-sm md:h-28 md:text-xl"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.15 }}
@@ -2000,7 +2062,7 @@ function PressMini({ output }: { output: PressOutput }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
       >
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cobalt">
+        <p className="text-xs font-bold uppercase text-cobalt">
           Output
         </p>
         <h3 className="mt-2 text-2xl font-semibold leading-tight">{output.headline}</h3>
@@ -2273,7 +2335,7 @@ function FinalMessage() {
         <p className="text-3xl font-semibold text-ink/45 md:text-5xl">
           보도자료를 작성하는 홍보담당자에서
         </p>
-        <p className="mt-6 text-5xl font-semibold tracking-normal text-ink md:text-7xl">
+        <p className="mt-6 text-5xl font-semibold text-ink md:text-7xl">
           홍보용 AI를 만드는 홍보담당자로
         </p>
       </motion.div>
