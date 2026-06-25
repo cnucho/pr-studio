@@ -176,6 +176,16 @@ function audioDuration(file) {
   return Number.parseFloat(output);
 }
 
+function synthesizeSpeech(inputText, outputWav) {
+  run("node", [
+    path.join(root, "scripts", "synthesize-speech.mjs"),
+    "--input",
+    inputText,
+    "--output",
+    outputWav,
+  ]);
+}
+
 async function ensureDirs() {
   await mkdir(audioDir, { recursive: true });
   await mkdir(clipDir, { recursive: true });
@@ -189,17 +199,7 @@ async function makeAudio() {
     const wavPath = path.join(audioDir, `${clip.id}.wav`);
     clip.audio = wavPath;
     await writeFile(textPath, clip.narration, "utf8");
-    run("powershell", [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      path.join(root, "scripts", "speak.ps1"),
-      "-InputText",
-      textPath,
-      "-OutputWav",
-      wavPath,
-    ]);
+    synthesizeSpeech(textPath, wavPath);
     clip.duration = audioDuration(wavPath) + 0.75;
   }
 }

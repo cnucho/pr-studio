@@ -301,6 +301,16 @@ function audioDuration(file) {
   );
 }
 
+function synthesizeSpeech(inputText, outputWav) {
+  run("node", [
+    path.join(root, "scripts", "synthesize-speech.mjs"),
+    "--input",
+    inputText,
+    "--output",
+    outputWav,
+  ]);
+}
+
 function slideHtml(slide, { vertical = false, thumbnail = false } = {}) {
   const width = vertical ? 1080 : 1920;
   const height = vertical ? 1920 : 1080;
@@ -627,17 +637,7 @@ async function makeAudio(slides, prefix) {
     const textPath = path.join(narrationRoot, `${prefix}-${slide.id}.txt`);
     const wavPath = path.join(audioRoot, `${prefix}-${slide.id}.wav`);
     await writeFile(textPath, slide.narration, "utf8");
-    run("powershell", [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      path.join(root, "scripts", "speak.ps1"),
-      "-InputText",
-      textPath,
-      "-OutputWav",
-      wavPath,
-    ]);
+    synthesizeSpeech(textPath, wavPath);
     slide.audio = wavPath;
     slide.duration = audioDuration(wavPath) + 0.45;
   }

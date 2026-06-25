@@ -33,6 +33,8 @@ PR Studio는 보도자료, 뉴스 분석, 영상 기획, AI 글쓰기, 타겟팅
 - `OPENAI_API_KEY`가 있으면 GPT가 제작 계획을 세웁니다.
 - `OPENAI_MODEL`로 사용할 모델을 바꿀 수 있습니다. 기본값은 `gpt-5.5`입니다.
 - API 키가 없거나 GPT 요청이 실패하면 로컬 플래너로 같은 렌더링 흐름을 실행합니다.
+- Google Cloud 인증(`GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_SERVICE_ACCOUNT_JSON`, 또는 `GOOGLE_CLOUD_ACCESS_TOKEN`)이 있으면 영상 내레이션은 Google Cloud TTS Chirp 3 HD를 우선 사용합니다. 없으면 ElevenLabs, OpenAI TTS(`gpt-4o-mini-tts`), Windows 내장 음성 순서로 돌아갑니다.
+- 음성 설정은 `PR_STUDIO_TTS_PROVIDER`, `PR_STUDIO_TTS_PROVIDER_KO`, `PR_STUDIO_TTS_PROVIDER_EN`, `GOOGLE_TTS_VOICE_KO`, `GOOGLE_TTS_VOICE_EN`, `GOOGLE_TTS_SPEAKING_RATE`, `GOOGLE_TTS_INPUT_MODE`, `PR_STUDIO_TTS_MODEL`, `PR_STUDIO_TTS_VOICE_KO`, `PR_STUDIO_TTS_VOICE_EN`, `PR_STUDIO_TTS_INSTRUCTIONS`, `ELEVENLABS_VOICE_ID_KO`, `ELEVENLABS_VOICE_ID_EN`으로 조정할 수 있습니다.
 - 완성 파일은 `out/pr-studio-final.mp4`에 저장되고 앱 안에서 바로 재생하거나 다운로드할 수 있습니다.
 
 ## 실행
