@@ -1,0 +1,40 @@
+{
+  "lecture_title": "AI Company_lecture",
+  "git_root": "C:\\git-app\\pr-studio",
+  "git_folder": "C:\\git-app\\pr-studio\\lecture-materials\\AI Company_lecture",
+  "dropbox_folder": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture",
+  "render_command": "npm run render:correction-demo",
+  "current_render": {
+    "video_name": "correction-level-agent-demo.mp4",
+    "duration_seconds": 132.604333,
+    "resolution": "1920x1080",
+    "size_bytes": 5339598,
+    "audio": "Korean Google TTS narration",
+    "validation_case": "cell_sum_001",
+    "release_decision": "do_not_release",
+    "evidence_codes": [
+      "BASE_N_MISMATCH",
+      "CELL_SUM_MISMATCH"
+    ]
+  },
+  "git_materials": [
+    "lecture-materials/AI Company_lecture/README.md",
+    "lecture-materials/AI Company_lecture/demo-script-ko.md",
+    "lecture-materials/AI Company_lecture/materials-manifest.json",
+    "docs/demo-scripts/correction-level-agent/demo-script-ko.md",
+    "scripts/render-correction-level-agent-demo.mjs",
+    "package.json"
+  ],
+  "dropbox_materials": [
+    "video/correction-level-agent-demo.mp4",
+    "metadata/render-report.json",
+    "metadata/sample-frame.png",
+    "metadata/concat.txt",
+    "screens/raw",
+    "screens/slides",
+    "audio",
+    "narration",
+    "clips",
+    "git_materials"
+  ]
+}
