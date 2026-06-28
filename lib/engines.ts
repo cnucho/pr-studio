@@ -84,6 +84,62 @@ export type YoutubeOutput = {
   };
 };
 
+export type YoutubeFeedbackInput = {
+  campaignName: string;
+  videoTitle: string;
+  targetAudience: string;
+  currentPromise: string;
+  metricsSummary: string;
+  feedbackText: string;
+};
+
+export type FeedbackSignalId =
+  | "comprehension_gap"
+  | "evidence_demand"
+  | "action_gap"
+  | "metadata_mismatch"
+  | "pacing_visual"
+  | "product_friction"
+  | "audience_mismatch";
+
+export type FeedbackRepairLevelId =
+  | "metadata_tune"
+  | "script_reframe"
+  | "evidence_repair"
+  | "workflow_repair"
+  | "strategy_shift";
+
+export type FeedbackSignal = {
+  id: FeedbackSignalId;
+  label: string;
+  count: number;
+  severity: "낮음" | "중간" | "높음";
+  evidence: string[];
+  implication: string;
+};
+
+export type FeedbackRepairLevel = {
+  id: FeedbackRepairLevelId;
+  label: string;
+  score: number;
+  reason: string;
+  actions: string[];
+};
+
+export type YoutubeFeedbackOutput = {
+  headline: string;
+  primaryLevel: FeedbackRepairLevel;
+  confidence: number;
+  diagnosis: string;
+  signals: FeedbackSignal[];
+  repairLevels: FeedbackRepairLevel[];
+  revisedBrief: string;
+  titleExperiments: string[];
+  scriptRepairs: string[];
+  nextExperiment: string;
+  backlogItems: string[];
+};
+
 export type WritingInput = {
   sourceText: string;
   audience: string;
@@ -233,6 +289,14 @@ function extractSentences(text: string, max = 5) {
     .split(/(?<=[.!?다요])\s+|[;\n]+/u)
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.length >= 12)
+    .slice(0, max);
+}
+
+function extractFeedbackSentences(text: string, max = 28) {
+  return text
+    .split(/\n+|(?<=[.!?다요])\s+/u)
+    .map((sentence) => sentence.replace(/^[-*•\d.\s:댓글]+/u, "").trim())
+    .filter((sentence) => sentence.length >= 6)
     .slice(0, max);
 }
 
@@ -476,6 +540,250 @@ export function createYoutubeKit(input: YoutubeInput): YoutubeOutput {
         "음성 녹음 후 대본을 맞추기보다 실제 클릭 흐름을 먼저 녹화한 뒤 내레이션 작성",
       ],
     },
+  };
+}
+
+const feedbackSignalRules: Array<{
+  id: FeedbackSignalId;
+  label: string;
+  implication: string;
+  patterns: RegExp[];
+}> = [
+  {
+    id: "comprehension_gap",
+    label: "이해 실패",
+    implication: "영상의 기본 설명 구조나 예시가 시청자의 사고 흐름과 맞지 않습니다.",
+    patterns: [
+      /이해|모르겠|무슨 말|복잡|헷갈|어렵|설명.*부족|unclear|confus|hard to understand/i,
+      /처음.*봐도|초보|입문|개념|맥락/,
+    ],
+  },
+  {
+    id: "evidence_demand",
+    label: "근거 요구",
+    implication: "주장보다 증빙과 한계 조건을 먼저 보여줘야 신뢰가 생깁니다.",
+    patterns: [
+      /근거|출처|증빙|자료|통계|사례|진짜|믿|과장|허위|source|evidence|proof|claim/i,
+      /얼마나|기준|비교|표본|기간/,
+    ],
+  },
+  {
+    id: "action_gap",
+    label: "다음 행동 불명확",
+    implication: "시청자가 이해한 뒤 무엇을 해야 하는지 충분히 닫히지 않았습니다.",
+    patterns: [
+      /신청|어디서|어떻게|링크|자격|대상|기간|문의|다음|apply|link|where|how|qualif/i,
+      /누가.*받|무엇.*하|언제까지/,
+    ],
+  },
+  {
+    id: "metadata_mismatch",
+    label: "제목/썸네일 약속 불일치",
+    implication: "클릭 전 약속과 영상 본문이 어긋나 유입 이후 이탈이나 불만이 생깁니다.",
+    patterns: [
+      /제목|썸네일|낚시|과장|기대.*다르|클릭|title|thumbnail|clickbait|promise/i,
+      /보고.*왔는데|생각.*달라/,
+    ],
+  },
+  {
+    id: "pacing_visual",
+    label: "속도/화면 밀도 문제",
+    implication: "메시지 자체보다 전달 형식 때문에 이해와 신뢰가 손상되고 있습니다.",
+    patterns: [
+      /빠르|느리|자막|글씨|화면|안 보|작아|소리|음성|발음|subtitle|caption|too fast|screen/i,
+      /멈춰|확대|보여/,
+    ],
+  },
+  {
+    id: "product_friction",
+    label: "앱/흐름 불편",
+    implication: "홍보물보다 제품이나 업무 흐름 자체를 수정해야 할 가능성이 있습니다.",
+    patterns: [
+      /버튼|오류|에러|안 됨|안되|불편|기능|앱|화면 구성|클릭|UI|UX|bug|error|feature|workflow/i,
+      /찾기 힘들|입력.*어려/,
+    ],
+  },
+  {
+    id: "audience_mismatch",
+    label: "대상/문제 프레임 불일치",
+    implication: "현재 영상의 대상자 정의나 문제 설정이 실제 시청자와 어긋납니다.",
+    patterns: [
+      /우리.*아니|나랑.*상관|대상.*아니|누구.*위한|왜.*필요|문제.*아니|irrelevant|not for me|audience/i,
+      /학생|청년|기업|담당자|시민.*헷갈/,
+    ],
+  },
+];
+
+function severityFromCount(count: number, total: number): FeedbackSignal["severity"] {
+  if (count >= 3 || count / Math.max(total, 1) >= 0.28) return "높음";
+  if (count >= 1) return "중간";
+  return "낮음";
+}
+
+function buildSignal(
+  rule: (typeof feedbackSignalRules)[number],
+  sentences: string[],
+): FeedbackSignal {
+  const evidence = sentences.filter((sentence) =>
+    rule.patterns.some((pattern) => pattern.test(sentence)),
+  );
+
+  return {
+    id: rule.id,
+    label: rule.label,
+    count: evidence.length,
+    severity: severityFromCount(evidence.length, sentences.length),
+    evidence: evidence.slice(0, 3),
+    implication: rule.implication,
+  };
+}
+
+function signalCount(signals: FeedbackSignal[], id: FeedbackSignalId) {
+  return signals.find((signal) => signal.id === id)?.count ?? 0;
+}
+
+function buildRepairLevels(input: YoutubeFeedbackInput, signals: FeedbackSignal[]) {
+  const comprehension = signalCount(signals, "comprehension_gap");
+  const evidence = signalCount(signals, "evidence_demand");
+  const action = signalCount(signals, "action_gap");
+  const metadata = signalCount(signals, "metadata_mismatch");
+  const pacing = signalCount(signals, "pacing_visual");
+  const product = signalCount(signals, "product_friction");
+  const audience = signalCount(signals, "audience_mismatch");
+  const hasMetricsConcern = /댓글|comment|반응|engagement|좋아요|조회수|views/i.test(input.metricsSummary);
+
+  const levels: FeedbackRepairLevel[] = [
+    {
+      id: "strategy_shift",
+      label: "전략 프레임 전환",
+      score: audience * 4 + comprehension + metadata + (audience > 0 && evidence > 0 ? 2 : 0),
+      reason: "시청자가 영상의 대상과 문제 설정을 받아들이지 못하면 문장 수정이 아니라 프레임을 바꿔야 합니다.",
+      actions: [
+        "대상을 직업/상태/문제 상황 기준으로 다시 정의",
+        "첫 20초를 정책 설명이 아니라 시청자의 실제 문제로 재작성",
+        "대상별 버전으로 영상을 분리할지 결정",
+      ],
+    },
+    {
+      id: "workflow_repair",
+      label: "앱/업무 흐름 수정",
+      score: product * 5 + action + pacing,
+      reason: "피드백이 버튼, 오류, 입력, 화면 흐름으로 모이면 홍보물이 아니라 제품 경험이 병목입니다.",
+      actions: [
+        "반복 언급된 UI 또는 단계에 개선 이슈 등록",
+        "튜토리얼 영상에는 문제 구간을 실제 클릭 흐름으로 다시 녹화",
+        "기능 부족 피드백은 다음 콘텐츠가 아니라 앱 백로그로 분리",
+      ],
+    },
+    {
+      id: "evidence_repair",
+      label: "근거/신뢰 보강",
+      score: evidence * 4 + metadata + (hasMetricsConcern ? 1 : 0),
+      reason: "과장, 출처, 비교 기준에 대한 요구가 있으면 신뢰 장치를 먼저 보강해야 합니다.",
+      actions: [
+        "수치와 사례의 출처를 화면 또는 설명란에 명시",
+        "말할 수 있는 결론과 아직 확인이 필요한 내용을 분리",
+        "FAQ와 고정 댓글에 근거 링크와 한계 조건 추가",
+      ],
+    },
+    {
+      id: "script_reframe",
+      label: "대본 구조 재작성",
+      score: comprehension * 4 + action * 3 + pacing,
+      reason: "시청자가 내용은 필요로 하지만 이해 경로를 놓쳤다면 대본 순서와 예시를 다시 짜야 합니다.",
+      actions: [
+        "도입부를 질문형 문제 제기로 교체",
+        "대상, 조건, 행동 순서로 본문 재배열",
+        "정보가 많은 화면은 여러 beat로 나누고 자막은 의미 요약형으로 축소",
+      ],
+    },
+    {
+      id: "metadata_tune",
+      label: "제목/썸네일/설명 조정",
+      score: metadata * 4 + Math.max(0, action - 1) + (hasMetricsConcern ? 1 : 0),
+      reason: "피드백이 클릭 전 기대와 본문 약속의 차이에 집중되면 게시 패키지부터 고쳐야 합니다.",
+      actions: [
+        "제목의 약속을 영상 첫 문장과 일치",
+        "썸네일 문구를 결과 중심에서 질문 중심으로 A/B 테스트",
+        "설명란 첫 세 줄에 대상, 혜택, 다음 행동을 배치",
+      ],
+    },
+  ];
+
+  return levels
+    .filter((level) => level.score > 0)
+    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "ko"));
+}
+
+export function analyzeYoutubeFeedback(input: YoutubeFeedbackInput): YoutubeFeedbackOutput {
+  const campaignName = clean(input.campaignName, "YouTube 홍보 캠페인");
+  const videoTitle = clean(input.videoTitle, "분석 대상 영상");
+  const targetAudience = clean(input.targetAudience, "정책 관심층과 실제 신청 대상자");
+  const currentPromise = clean(input.currentPromise, "정책을 쉽게 이해하고 다음 행동을 결정하게 한다");
+  const feedbackText = clean(
+    input.feedbackText,
+    "대상이 누구인지 모르겠습니다.\n신청 링크가 어디 있는지 모르겠어요.\n근거 자료가 있으면 더 믿을 수 있을 것 같습니다.",
+  );
+  const sentences = extractFeedbackSentences(feedbackText);
+  const signals = feedbackSignalRules
+    .map((rule) => buildSignal(rule, sentences))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "ko"));
+  const activeSignals = signals.filter((signal) => signal.count > 0);
+  const repairLevels = buildRepairLevels(input, signals);
+  const primaryLevel =
+    repairLevels[0] ??
+    ({
+      id: "metadata_tune",
+      label: "제목/썸네일/설명 조정",
+      score: 1,
+      reason: "명확한 위험 신호가 적을 때는 작은 게시 패키지 실험으로 시작합니다.",
+      actions: [
+        "제목과 설명란의 핵심 약속을 더 구체화",
+        "시청자 질문을 설명란과 고정 댓글에 반영",
+        "다음 영상에서 같은 주제를 다른 후킹으로 테스트",
+      ],
+    } satisfies FeedbackRepairLevel);
+  const topSignal = activeSignals[0];
+  const totalMatches = activeSignals.reduce((total, signal) => total + signal.count, 0);
+  const confidence = Math.min(94, Math.max(56, 58 + totalMatches * 6 + repairLevels.length * 3));
+  const coreKeywords = extractKeywords(`${feedbackText} ${campaignName} ${videoTitle}`, 4);
+  const core = coreKeywords[0] ?? "핵심 질문";
+  const second = coreKeywords[1] ?? "대상";
+  const third = coreKeywords[2] ?? "근거";
+
+  return {
+    headline: `${primaryLevel.label}: ${videoTitle}`,
+    primaryLevel,
+    confidence,
+    diagnosis: topSignal
+      ? `${campaignName} 피드백은 '${topSignal.label}' 신호가 가장 강합니다. 현재 약속인 "${currentPromise}"를 유지하더라도, 수정의 초점은 ${primaryLevel.label}에 둬야 합니다.`
+      : `${campaignName} 피드백에서 큰 위험 신호는 아직 약합니다. 작은 게시 패키지 실험으로 다음 반응을 확인하는 것이 적절합니다.`,
+    signals,
+    repairLevels,
+    revisedBrief: `${targetAudience}에게 ${core}가 왜 중요한지 먼저 말하고, ${second} 조건과 ${third} 근거를 화면에서 확인시킨 뒤 다음 행동으로 닫는 영상으로 재작성합니다.`,
+    titleExperiments: [
+      `${core}, 누가 받을 수 있나? ${second}부터 확인`,
+      `${videoTitle.replace(/\s*\|.*$/, "")}: 헷갈리는 부분만 다시 정리`,
+      `${targetAudience}이 먼저 물어본 ${third} 답변`,
+    ],
+    scriptRepairs: [
+      "00:00-00:20: 제목의 약속을 그대로 반복하지 말고 시청자 질문 하나로 시작",
+      "00:20-01:20: 대상과 제외 조건을 표로 보여주고 예외를 한 문장으로 정리",
+      "01:20-03:00: 근거, 사례, 한계 조건을 사실과 해석으로 분리",
+      "마지막 30초: 신청, 문의, 확인 링크 중 하나의 행동만 남김",
+    ],
+    nextExperiment: `${primaryLevel.label} 버전과 기존 버전을 같은 설명란 구조로 게시하고, 댓글의 질문 유형 변화와 반응률을 함께 비교합니다.`,
+    backlogItems: primaryLevel.id === "workflow_repair"
+      ? [
+          "피드백에 나온 UI/클릭 흐름을 제품 이슈로 등록",
+          "튜토리얼 화면에서 문제 구간만 재녹화",
+          "다음 배포 전 사용자 1명에게 같은 흐름을 따라 하게 해 관찰",
+        ]
+      : [
+          "고정 댓글용 FAQ 3개 작성",
+          "설명란 첫 세 줄을 대상, 근거, 다음 행동 순서로 재작성",
+          "다음 영상 brief에 댓글 근거 문장 3개 첨부",
+        ],
   };
 }
 

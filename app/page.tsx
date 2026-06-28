@@ -39,14 +39,17 @@ import {
 import { useEffect, useState } from "react";
 import {
   analyzeNews,
+  analyzeYoutubeFeedback,
   createPressRelease,
   createYoutubeKit,
   createWritingKit,
+  type FeedbackRepairLevel,
   type NewsAnalysisOutput,
   type PressInput,
   type PressOutput,
   type WritingInput,
   type WritingOutput,
+  type YoutubeFeedbackOutput,
   type YoutubeInput,
   type YoutubeOutput,
 } from "@/lib/engines";
@@ -334,6 +337,12 @@ const sampleVideoRows: VideoMetricRow[] = [
     collectedAt: "2026-06-12 17:00",
   },
 ];
+
+const sampleYoutubeFeedback = `대상이 정확히 누구인지 모르겠습니다. 청년이라고만 하면 학생인지 취업준비생인지 지역 기업 재직자인지 헷갈립니다.
+신청은 어디서 하는지, 자격 조건은 무엇인지 영상 끝까지 봐도 바로 알기 어렵습니다.
+120억 원이라는 숫자는 나오는데 기준이나 출처가 화면에 없어서 조금 과장처럼 느껴집니다.
+제목은 '이 부분만 보세요'인데 실제로는 정책 설명이 길어서 처음 기대와 달랐습니다.
+화면에 글씨가 많고 자막이 빨리 지나가서 핵심 조건을 놓쳤습니다.`;
 
 function profileScore(profile: CitizenProfile, objective: Objective) {
   if (objective === "reach") {
@@ -1513,6 +1522,7 @@ function AgentStudio() {
           </div>
         </section>
       </div>
+
     </ToolShell>
   );
 }
@@ -1523,6 +1533,8 @@ function PerformanceCollectorTool() {
   const [videoIds, setVideoIds] = useState("https://www.youtube.com/watch?v=VIDEO_ID");
   const [rows, setRows] = useState<VideoMetricRow[]>(sampleVideoRows);
   const [status, setStatus] = useState("샘플 데이터로 성과 수집 흐름을 표시했습니다.");
+  const [feedbackText, setFeedbackText] = useState(sampleYoutubeFeedback);
+  const [feedbackOutput, setFeedbackOutput] = useState<YoutubeFeedbackOutput | null>(null);
   const [loading, setLoading] = useState(false);
 
   const totalViews = rows.reduce((total, row) => total + row.views, 0);
@@ -1590,9 +1602,39 @@ function PerformanceCollectorTool() {
     }
   }
 
+  function analyzeFeedback(text = feedbackText) {
+    const targetVideo = topRow;
+    const metricsSummary = rows.length
+      ? rows
+          .map(
+            (row) =>
+              `${row.title}: 조회수 ${row.views}, 좋아요 ${row.likes}, 댓글 ${row.comments}, 반응률 ${engagementRate(row).toFixed(2)}%`,
+          )
+          .join("\n")
+      : "아직 수집된 공개 지표가 없습니다.";
+
+    setFeedbackOutput(
+      analyzeYoutubeFeedback({
+        campaignName,
+        videoTitle: targetVideo?.title ?? "분석 대상 영상",
+        targetAudience: "정책 관심층과 실제 신청 대상자",
+        currentPromise: targetVideo
+          ? `${targetVideo.title} 영상이 정책 이해와 다음 행동을 돕는다`
+          : "정책을 쉽게 이해하고 다음 행동을 결정하게 한다",
+        metricsSummary,
+        feedbackText: text,
+      }),
+    );
+  }
+
   function loadSample() {
     setRows(sampleVideoRows);
     setStatus("샘플 데이터로 성과 수집 흐름을 표시했습니다.");
+  }
+
+  function loadSampleFeedback() {
+    setFeedbackText(sampleYoutubeFeedback);
+    analyzeFeedback(sampleYoutubeFeedback);
   }
 
   function downloadCsv() {
@@ -1663,10 +1705,11 @@ function PerformanceCollectorTool() {
         </div>
       }
     >
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <section className="rounded-lg border border-line bg-white p-4">
-          <div className="grid gap-4">
-            <Field label="캠페인명" value={campaignName} onChange={setCampaignName} />
+      <div className="grid gap-5">
+        <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
+          <section className="rounded-lg border border-line bg-white p-4">
+            <div className="grid gap-4">
+              <Field label="캠페인명" value={campaignName} onChange={setCampaignName} />
             <label className="grid gap-2 text-sm font-semibold">
               YouTube Data API Key
               <input
@@ -1732,8 +1775,165 @@ function PerformanceCollectorTool() {
             </div>
           )}
         </section>
+        </div>
+
+        <section className="grid gap-4 rounded-lg border border-line bg-white p-4 shadow-soft">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase text-cobalt">Feedback Repair Judge</p>
+              <h3 className="mt-1 text-2xl font-semibold">댓글/피드백 기반 수정 수준 판단</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={loadSampleFeedback}
+                className="focus-ring flex h-11 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold transition hover:bg-paper"
+              >
+                <MessageSquareText className="h-4 w-4" />
+                샘플 피드백
+              </button>
+              <button
+                type="button"
+                onClick={() => analyzeFeedback()}
+                disabled={!feedbackText.trim()}
+                className="focus-ring flex h-11 items-center gap-2 rounded-md bg-coral px-4 text-sm font-semibold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <BrainCircuit className="h-4 w-4" />
+                수정 수준 판단
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <div className="grid gap-4">
+              <TextArea
+                label="YouTube 댓글, 리뷰, 내부 피드백"
+                value={feedbackText}
+                rows={10}
+                onChange={setFeedbackText}
+              />
+              <p className="rounded-md bg-paper px-3 py-2 text-sm font-semibold leading-relaxed text-ink/68">
+                판단 기준: 이해 실패, 근거 요구, 다음 행동, 제목/썸네일 약속, 화면 밀도, 앱 흐름, 대상 프레임.
+              </p>
+            </div>
+
+            <FeedbackRepairResult output={feedbackOutput} />
+          </div>
+        </section>
       </div>
     </ToolShell>
+  );
+}
+
+function FeedbackRepairResult({ output }: { output: YoutubeFeedbackOutput | null }) {
+  if (!output) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-dashed border-line bg-canvas p-5 text-center">
+        <div className="max-w-md">
+          <BrainCircuit className="mx-auto h-9 w-9 text-cobalt" />
+          <h4 className="mt-3 text-xl font-semibold">피드백을 판단할 준비가 됐습니다</h4>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-ink/62">
+            샘플 피드백을 불러오거나 실제 댓글을 붙여 넣은 뒤 수정 수준 판단을 실행하세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const activeSignals = output.signals.filter((signal) => signal.count > 0);
+
+  return (
+    <div className="grid gap-4">
+      <article className="rounded-lg border border-ink bg-ink p-5 text-white">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase text-white/58">Primary Decision</p>
+            <h4 className="mt-2 text-2xl font-semibold leading-tight">{output.primaryLevel.label}</h4>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1.5 text-sm font-bold text-ink">
+            {output.confidence}% 확신
+          </span>
+        </div>
+        <p className="mt-4 text-sm font-medium leading-relaxed text-white/82">{output.diagnosis}</p>
+        <div className="mt-4 grid gap-2">
+          {output.primaryLevel.actions.map((action) => (
+            <div key={action} className="flex items-start gap-2 rounded-md bg-white/10 px-3 py-2 text-sm font-semibold">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
+              <span>{action}</span>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <article className="rounded-lg border border-line p-4">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <MessageSquareText className="h-4 w-4 text-coral" />
+            피드백 신호
+          </div>
+          <div className="mt-3 grid gap-2">
+            {(activeSignals.length ? activeSignals : output.signals.slice(0, 3)).map((signal) => (
+              <div key={signal.id} className="rounded-md bg-paper px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold">{signal.label}</span>
+                  <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-ink/70">
+                    {signal.count}건 · {signal.severity}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs font-semibold leading-relaxed text-ink/58">{signal.implication}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="rounded-lg border border-line p-4">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <Target className="h-4 w-4 text-cobalt" />
+            수정 수준 후보
+          </div>
+          <div className="mt-3 grid gap-2">
+            {output.repairLevels.slice(0, 4).map((level, index) => (
+              <RepairLevelRow key={level.id} level={level} rank={index + 1} />
+            ))}
+          </div>
+        </article>
+      </div>
+
+      <article className="rounded-lg border border-line p-4">
+        <div className="flex items-center gap-2 text-sm font-bold">
+          <ClipboardCheck className="h-4 w-4 text-mint" />
+          다음 제작 지시서
+        </div>
+        <p className="mt-3 rounded-md bg-mint/10 px-3 py-3 text-sm font-semibold leading-relaxed text-ink/76">
+          {output.revisedBrief}
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <AssetList title="제목 실험" items={output.titleExperiments} icon={<Youtube className="h-4 w-4 text-coral" />} />
+          <AssetList title="대본 수리" items={output.scriptRepairs} icon={<FileText className="h-4 w-4 text-cobalt" />} />
+          <AssetList title="백로그" items={output.backlogItems} icon={<ClipboardCheck className="h-4 w-4 text-mint" />} />
+        </div>
+        <p className="mt-4 rounded-md bg-cobalt/10 px-3 py-3 text-sm font-bold leading-relaxed text-cobalt">
+          {output.nextExperiment}
+        </p>
+      </article>
+    </div>
+  );
+}
+
+function RepairLevelRow({ level, rank }: { level: FeedbackRepairLevel; rank: number }) {
+  return (
+    <div className="rounded-md border border-line px-3 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-cobalt text-sm font-bold text-white">
+            {rank}
+          </span>
+          <span className="text-sm font-bold">{level.label}</span>
+        </div>
+        <span className="text-xs font-bold text-ink/48">score {level.score}</span>
+      </div>
+      <p className="mt-2 text-xs font-semibold leading-relaxed text-ink/62">{level.reason}</p>
+    </div>
   );
 }
 
