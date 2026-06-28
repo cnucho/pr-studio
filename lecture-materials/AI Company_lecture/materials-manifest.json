@@ -46,6 +46,18 @@
     "dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\column\\blog-column-ko.md",
     "title": "AI 에이전트는 강력하다. 그러나 잘 만든 에이전트만 실제 업무에 쓰인다"
   },
+  "marketing_planner_article": {
+    "git_path": "lecture-materials/AI Company_lecture/article-agent-era-marketing-planners-ko.md",
+    "dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\column\\article-agent-era-marketing-planners-ko.md",
+    "title": "AI 에이전트 시대, 마케팅·기획자는 무엇을 준비해야 하나",
+    "audience": "Marketing and planning professionals using survey data",
+    "sources": [
+      "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai",
+      "https://assets-c4akfrf5b4d3f4b7.z01.azurefd.net/assets/2025/04/WTI-2025-04-The-Year-the-Frontier-v13_68535917c7c2a.pdf",
+      "https://www.anthropic.com/news/3-5-models-and-computer-use",
+      "https://www.deloitte.com/us/en/insights/topics/emerging-technologies/ai-agents-scaling-faster.html"
+    ]
+  },
   "git_materials": [
     "lecture-materials/AI Company_lecture/README.md",
     "lecture-materials/AI Company_lecture/demo-script-ko.md",
@@ -54,6 +66,7 @@
     "lecture-materials/AI Company_lecture/demo-narration/02-pr-studio-press-release.txt",
     "lecture-materials/AI Company_lecture/slide-outline-ko.md",
     "lecture-materials/AI Company_lecture/blog-column-ko.md",
+    "lecture-materials/AI Company_lecture/article-agent-era-marketing-planners-ko.md",
     "lecture-materials/AI Company_lecture/materials-manifest.json",
     "docs/demo-scripts/correction-level-agent/demo-script-ko.md",
     "scripts/render-correction-level-agent-demo.mjs",
@@ -62,6 +75,7 @@
   "dropbox_materials": [
     "slides-md/AI-Company-lecture-full-slides.md",
     "slides-md/demo-index-ko.md",
+    "column/article-agent-era-marketing-planners-ko.md",
     "demos/demo-01-text-analysis-repair.mp4",
     "demos/demo-02-pr-studio-press-release.mp4",
     "demos/demo-03-pr-studio-feedback-repair.mp4",

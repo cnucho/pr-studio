@@ -29,6 +29,7 @@ These files are small, text-based, and should remain in git:
 - `lecture-materials/AI Company_lecture/demo-narration/02-pr-studio-press-release.txt`
 - `lecture-materials/AI Company_lecture/slide-outline-ko.md`
 - `lecture-materials/AI Company_lecture/blog-column-ko.md`
+- `lecture-materials/AI Company_lecture/article-agent-era-marketing-planners-ko.md`
 - `lecture-materials/AI Company_lecture/materials-manifest.json`
 - `docs/demo-scripts/correction-level-agent/demo-script-ko.md`
 - `scripts/render-correction-level-agent-demo.mjs`
@@ -45,6 +46,7 @@ Expected Dropbox contents:
 
 - `slides-md/AI-Company-lecture-full-slides.md`
 - `slides-md/demo-index-ko.md`
+- `column/article-agent-era-marketing-planners-ko.md`
 - `demos/demo-01-text-analysis-repair.mp4`
 - `demos/demo-02-pr-studio-press-release.mp4`
 - `demos/demo-03-pr-studio-feedback-repair.mp4`
@@ -114,3 +116,10 @@ C:\git-app\pr-studio\out\correction-level-agent-demo\correction-level-agent-demo
 - Dropbox copy: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\column\blog-column-ko.md`
 - Audience: professional AI users who are not AI specialists
 - Message: AI agents are powerful, but only well-designed agents become useful work systems.
+
+## Marketing Planner Article Draft
+
+- Git source: `lecture-materials/AI Company_lecture/article-agent-era-marketing-planners-ko.md`
+- Dropbox copy: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\column\article-agent-era-marketing-planners-ko.md`
+- Audience: marketing and planning professionals who use survey data
+- Message: the AI-agent era changes work from asking better prompts to delegating, validating, and deciding the proper level of correction.
