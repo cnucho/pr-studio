@@ -1855,6 +1855,9 @@ function FeedbackRepairResult({ output }: { output: YoutubeFeedbackOutput | null
           </span>
         </div>
         <p className="mt-4 text-sm font-medium leading-relaxed text-white/82">{output.diagnosis}</p>
+        <p className="mt-3 rounded-md bg-white/10 px-3 py-2 text-sm font-semibold leading-relaxed text-white/78">
+          {output.improvementPrinciple}
+        </p>
         <div className="mt-4 grid gap-2">
           {output.primaryLevel.actions.map((action) => (
             <div key={action} className="flex items-start gap-2 rounded-md bg-white/10 px-3 py-2 text-sm font-semibold">
@@ -1898,6 +1901,34 @@ function FeedbackRepairResult({ output }: { output: YoutubeFeedbackOutput | null
           </div>
         </article>
       </div>
+
+      <article className="rounded-lg border border-line p-4">
+        <div className="flex items-center gap-2 text-sm font-bold">
+          <ShieldCheck className="h-4 w-4 text-mint" />
+          개선 가드레일
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {output.guardrails.map((guardrail) => (
+            <div key={guardrail.label} className="rounded-md border border-line bg-canvas px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-bold">{guardrail.label}</span>
+                <span
+                  className={cx(
+                    "rounded-full px-2 py-1 text-xs font-bold",
+                    guardrail.status === "검토 필요"
+                      ? "bg-coral/10 text-coral"
+                      : "bg-mint/10 text-mint",
+                  )}
+                >
+                  {guardrail.status}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-ink/64">{guardrail.instruction}</p>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-ink/42">{guardrail.risk}</p>
+            </div>
+          ))}
+        </div>
+      </article>
 
       <article className="rounded-lg border border-line p-4">
         <div className="flex items-center gap-2 text-sm font-bold">

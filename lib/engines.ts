@@ -126,13 +126,22 @@ export type FeedbackRepairLevel = {
   actions: string[];
 };
 
+export type FeedbackGuardrail = {
+  label: string;
+  status: "적용" | "검토 필요";
+  instruction: string;
+  risk: string;
+};
+
 export type YoutubeFeedbackOutput = {
   headline: string;
   primaryLevel: FeedbackRepairLevel;
   confidence: number;
   diagnosis: string;
+  improvementPrinciple: string;
   signals: FeedbackSignal[];
   repairLevels: FeedbackRepairLevel[];
+  guardrails: FeedbackGuardrail[];
   revisedBrief: string;
   titleExperiments: string[];
   scriptRepairs: string[];
@@ -715,6 +724,59 @@ function buildRepairLevels(input: YoutubeFeedbackInput, signals: FeedbackSignal[
     .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "ko"));
 }
 
+function guardrailStatus(condition: boolean): FeedbackGuardrail["status"] {
+  return condition ? "검토 필요" : "적용";
+}
+
+function buildFeedbackGuardrails(
+  primaryLevel: FeedbackRepairLevel,
+  signals: FeedbackSignal[],
+): FeedbackGuardrail[] {
+  const evidence = signalCount(signals, "evidence_demand");
+  const metadata = signalCount(signals, "metadata_mismatch");
+  const product = signalCount(signals, "product_friction");
+  const audience = signalCount(signals, "audience_mismatch");
+
+  return [
+    {
+      label: "성과지표 단독 최적화 금지",
+      status: "적용",
+      instruction: "조회수와 댓글 수보다 오해 감소, 신뢰 회복, 다음 행동 명확성을 우선합니다.",
+      risk: "반응률만 좇으면 자극적 제목과 과장 설명으로 장기 신뢰를 잃을 수 있습니다.",
+    },
+    {
+      label: "사실과 근거 보존",
+      status: guardrailStatus(evidence > 0),
+      instruction: "새 수치, 사례, 비교 표현은 출처가 있을 때만 추가하고 사실과 해석을 분리합니다.",
+      risk: "근거 요구가 있는데 문구만 세게 바꾸면 환각이나 과장 홍보가 됩니다.",
+    },
+    {
+      label: "제목-본문 약속 일치",
+      status: guardrailStatus(metadata > 0 || primaryLevel.id === "metadata_tune"),
+      instruction: "제목과 썸네일은 영상 첫 30초 안에서 실제로 해결하는 질문만 약속합니다.",
+      risk: "클릭 유도는 가능해도 기대 불일치가 누적되면 댓글과 이탈이 악화됩니다.",
+    },
+    {
+      label: "댓글 개인정보 최소화",
+      status: "적용",
+      instruction: "사용자명, 개인 경험, 민감한 신상 정보는 원문 노출하지 말고 유형으로 요약합니다.",
+      risk: "피드백 학습 과정이 개인 식별이나 부적절한 재노출로 이어질 수 있습니다.",
+    },
+    {
+      label: "제품 수정 승인 게이트",
+      status: guardrailStatus(product > 0 || primaryLevel.id === "workflow_repair"),
+      instruction: "앱/업무 흐름 수정은 즉시 배포하지 말고 백로그, 재현, 담당자 확인을 거칩니다.",
+      risk: "댓글 한두 개에 의해 제품 구조가 흔들리면 실제 사용자 흐름이 더 불안정해질 수 있습니다.",
+    },
+    {
+      label: "대상 존중과 비조작",
+      status: guardrailStatus(audience > 0 || primaryLevel.id === "strategy_shift"),
+      instruction: "대상별 메시지는 취약성 이용이 아니라 문제 맥락의 명확화로 제한합니다.",
+      risk: "마이크로타겟팅이 조작적 설득이나 차별적 배제로 오해될 수 있습니다.",
+    },
+  ];
+}
+
 export function analyzeYoutubeFeedback(input: YoutubeFeedbackInput): YoutubeFeedbackOutput {
   const campaignName = clean(input.campaignName, "YouTube 홍보 캠페인");
   const videoTitle = clean(input.videoTitle, "분석 대상 영상");
@@ -750,6 +812,7 @@ export function analyzeYoutubeFeedback(input: YoutubeFeedbackInput): YoutubeFeed
   const core = coreKeywords[0] ?? "핵심 질문";
   const second = coreKeywords[1] ?? "대상";
   const third = coreKeywords[2] ?? "근거";
+  const guardrails = buildFeedbackGuardrails(primaryLevel, signals);
 
   return {
     headline: `${primaryLevel.label}: ${videoTitle}`,
@@ -758,8 +821,11 @@ export function analyzeYoutubeFeedback(input: YoutubeFeedbackInput): YoutubeFeed
     diagnosis: topSignal
       ? `${campaignName} 피드백은 '${topSignal.label}' 신호가 가장 강합니다. 현재 약속인 "${currentPromise}"를 유지하더라도, 수정의 초점은 ${primaryLevel.label}에 둬야 합니다.`
       : `${campaignName} 피드백에서 큰 위험 신호는 아직 약합니다. 작은 게시 패키지 실험으로 다음 반응을 확인하는 것이 적절합니다.`,
+    improvementPrinciple:
+      "유튜브 품질 자체를 한 번에 최대화하는 것이 아니라, 피드백을 해석해 다음 수정 수준을 고르고 그 결정을 가드레일 안에서 실행합니다.",
     signals,
     repairLevels,
+    guardrails,
     revisedBrief: `${targetAudience}에게 ${core}가 왜 중요한지 먼저 말하고, ${second} 조건과 ${third} 근거를 화면에서 확인시킨 뒤 다음 행동으로 닫는 영상으로 재작성합니다.`,
     titleExperiments: [
       `${core}, 누가 받을 수 있나? ${second}부터 확인`,
