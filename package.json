@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "node scripts/start-next.mjs",
     "lint": "eslint .",
-    "render:video": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-final-video.ps1"
+    "render:video": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-final-video.ps1",
+    "render:correction-demo": "node scripts/render-correction-level-agent-demo.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.18.1",
