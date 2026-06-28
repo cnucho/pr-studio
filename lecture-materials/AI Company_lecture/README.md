@@ -24,6 +24,9 @@ These files are small, text-based, and should remain in git:
 
 - `lecture-materials/AI Company_lecture/README.md`
 - `lecture-materials/AI Company_lecture/demo-script-ko.md`
+- `lecture-materials/AI Company_lecture/AI-Company-lecture-full-slides.md`
+- `lecture-materials/AI Company_lecture/demo-index-ko.md`
+- `lecture-materials/AI Company_lecture/demo-narration/02-pr-studio-press-release.txt`
 - `lecture-materials/AI Company_lecture/slide-outline-ko.md`
 - `lecture-materials/AI Company_lecture/blog-column-ko.md`
 - `lecture-materials/AI Company_lecture/materials-manifest.json`
@@ -40,6 +43,14 @@ C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture
 
 Expected Dropbox contents:
 
+- `slides-md/AI-Company-lecture-full-slides.md`
+- `slides-md/demo-index-ko.md`
+- `demos/demo-01-text-analysis-repair.mp4`
+- `demos/demo-02-pr-studio-press-release.mp4`
+- `demos/demo-03-pr-studio-feedback-repair.mp4`
+- `demos/demo-04-validation-server-ui.mp4`
+- `demos/demo-05-validation-result.mp4`
+- `screens/assets/`
 - `slides/AI Company_lecture_deck.pptx`
 - `slides/AI Company_lecture_deck_contact_sheet.png`
 - `slides/build-ai-company-lecture-deck.mjs`
@@ -86,11 +97,15 @@ C:\git-app\pr-studio\out\correction-level-agent-demo\correction-level-agent-demo
 
 ## Current Lecture Deck
 
+- Primary Markdown deck: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides-md\AI-Company-lecture-full-slides.md`
+- Demo index: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides-md\demo-index-ko.md`
+- Demo clips: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\demos`
 - Deck: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\AI Company_lecture_deck.pptx`
 - Contact sheet: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\AI Company_lecture_deck_contact_sheet.png`
 - Preview PNGs: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\preview`
 - Build script backup: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\build-ai-company-lecture-deck.mjs`
-- Structure: 10 slides, Korean, professional-user audience
+- Markdown structure: 50+ slides, Korean, professional-user audience
+- PPTX structure: 10-slide compact deck retained as a short summary only
 - Main demos: PR Studio press release, PR Studio YouTube, PR Studio feedback repair, Text Analysis Copilot repair-level example
 
 ## Column Draft

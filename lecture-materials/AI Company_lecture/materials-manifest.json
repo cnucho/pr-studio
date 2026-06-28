@@ -18,6 +18,12 @@
     ]
   },
   "current_deck": {
+    "primary_format": "markdown",
+    "markdown_name": "AI-Company-lecture-full-slides.md",
+    "markdown_slide_count": 55,
+    "markdown_dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides-md\\AI-Company-lecture-full-slides.md",
+    "demo_index_dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides-md\\demo-index-ko.md",
+    "demo_folder": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\demos",
     "deck_name": "AI Company_lecture_deck.pptx",
     "slide_count": 10,
     "language": "ko",
@@ -28,10 +34,11 @@
     "preview_folder": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\preview",
     "build_script_backup": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\build-ai-company-lecture-deck.mjs",
     "demo_examples": [
-      "PR Studio press release",
-      "PR Studio YouTube",
+      "Text Analysis Copilot repair-level video",
+      "PR Studio press release video",
       "PR Studio feedback repair",
-      "Text Analysis Copilot repair-level example"
+      "Insight Validation Server UI",
+      "Insight Validation Server result"
     ]
   },
   "column_draft": {
@@ -42,6 +49,9 @@
   "git_materials": [
     "lecture-materials/AI Company_lecture/README.md",
     "lecture-materials/AI Company_lecture/demo-script-ko.md",
+    "lecture-materials/AI Company_lecture/AI-Company-lecture-full-slides.md",
+    "lecture-materials/AI Company_lecture/demo-index-ko.md",
+    "lecture-materials/AI Company_lecture/demo-narration/02-pr-studio-press-release.txt",
     "lecture-materials/AI Company_lecture/slide-outline-ko.md",
     "lecture-materials/AI Company_lecture/blog-column-ko.md",
     "lecture-materials/AI Company_lecture/materials-manifest.json",
@@ -50,6 +60,14 @@
     "package.json"
   ],
   "dropbox_materials": [
+    "slides-md/AI-Company-lecture-full-slides.md",
+    "slides-md/demo-index-ko.md",
+    "demos/demo-01-text-analysis-repair.mp4",
+    "demos/demo-02-pr-studio-press-release.mp4",
+    "demos/demo-03-pr-studio-feedback-repair.mp4",
+    "demos/demo-04-validation-server-ui.mp4",
+    "demos/demo-05-validation-result.mp4",
+    "screens/assets",
     "slides/AI Company_lecture_deck.pptx",
     "slides/AI Company_lecture_deck_contact_sheet.png",
     "slides/build-ai-company-lecture-deck.mjs",
