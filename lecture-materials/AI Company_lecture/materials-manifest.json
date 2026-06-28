@@ -17,15 +17,44 @@
       "CELL_SUM_MISMATCH"
     ]
   },
+  "current_deck": {
+    "deck_name": "AI Company_lecture_deck.pptx",
+    "slide_count": 10,
+    "language": "ko",
+    "audience": "Professional AI users who are not AI specialists",
+    "message": "AI agents are powerful, but they need trust, automation, validation, and correction-level judgment to become useful work systems.",
+    "dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\AI Company_lecture_deck.pptx",
+    "contact_sheet": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\AI Company_lecture_deck_contact_sheet.png",
+    "preview_folder": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\preview",
+    "build_script_backup": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides\\build-ai-company-lecture-deck.mjs",
+    "demo_examples": [
+      "PR Studio press release",
+      "PR Studio YouTube",
+      "PR Studio feedback repair",
+      "Text Analysis Copilot repair-level example"
+    ]
+  },
+  "column_draft": {
+    "git_path": "lecture-materials/AI Company_lecture/blog-column-ko.md",
+    "dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\column\\blog-column-ko.md",
+    "title": "AI 에이전트는 강력하다. 그러나 잘 만든 에이전트만 실제 업무에 쓰인다"
+  },
   "git_materials": [
     "lecture-materials/AI Company_lecture/README.md",
     "lecture-materials/AI Company_lecture/demo-script-ko.md",
+    "lecture-materials/AI Company_lecture/slide-outline-ko.md",
+    "lecture-materials/AI Company_lecture/blog-column-ko.md",
     "lecture-materials/AI Company_lecture/materials-manifest.json",
     "docs/demo-scripts/correction-level-agent/demo-script-ko.md",
     "scripts/render-correction-level-agent-demo.mjs",
     "package.json"
   ],
   "dropbox_materials": [
+    "slides/AI Company_lecture_deck.pptx",
+    "slides/AI Company_lecture_deck_contact_sheet.png",
+    "slides/build-ai-company-lecture-deck.mjs",
+    "slides/preview",
+    "column/blog-column-ko.md",
     "video/correction-level-agent-demo.mp4",
     "metadata/render-report.json",
     "metadata/sample-frame.png",

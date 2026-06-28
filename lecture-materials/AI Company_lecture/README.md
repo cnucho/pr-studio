@@ -24,6 +24,8 @@ These files are small, text-based, and should remain in git:
 
 - `lecture-materials/AI Company_lecture/README.md`
 - `lecture-materials/AI Company_lecture/demo-script-ko.md`
+- `lecture-materials/AI Company_lecture/slide-outline-ko.md`
+- `lecture-materials/AI Company_lecture/blog-column-ko.md`
 - `lecture-materials/AI Company_lecture/materials-manifest.json`
 - `docs/demo-scripts/correction-level-agent/demo-script-ko.md`
 - `scripts/render-correction-level-agent-demo.mjs`
@@ -38,6 +40,11 @@ C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture
 
 Expected Dropbox contents:
 
+- `slides/AI Company_lecture_deck.pptx`
+- `slides/AI Company_lecture_deck_contact_sheet.png`
+- `slides/build-ai-company-lecture-deck.mjs`
+- `slides/preview/`
+- `column/blog-column-ko.md`
 - `video/correction-level-agent-demo.mp4`
 - `metadata/render-report.json`
 - `metadata/sample-frame.png`
@@ -76,3 +83,19 @@ C:\git-app\pr-studio\out\correction-level-agent-demo\correction-level-agent-demo
 - Validation demo case: `cell_sum_001`
 - Validation result: `do_not_release`
 - Blocking evidence: `BASE_N_MISMATCH`, `CELL_SUM_MISMATCH`
+
+## Current Lecture Deck
+
+- Deck: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\AI Company_lecture_deck.pptx`
+- Contact sheet: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\AI Company_lecture_deck_contact_sheet.png`
+- Preview PNGs: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\preview`
+- Build script backup: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\slides\build-ai-company-lecture-deck.mjs`
+- Structure: 10 slides, Korean, professional-user audience
+- Main demos: PR Studio press release, PR Studio YouTube, PR Studio feedback repair, Text Analysis Copilot repair-level example
+
+## Column Draft
+
+- Git source: `lecture-materials/AI Company_lecture/blog-column-ko.md`
+- Dropbox copy: `C:\Users\ciadmin\Dropbox\gitwork_data\AI Company_lecture\column\blog-column-ko.md`
+- Audience: professional AI users who are not AI specialists
+- Message: AI agents are powerful, but only well-designed agents become useful work systems.
