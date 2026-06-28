@@ -58,6 +58,11 @@
       "https://www.deloitte.com/us/en/insights/topics/emerging-technologies/ai-agents-scaling-faster.html"
     ]
   },
+  "final_handoff": {
+    "git_path": "lecture-materials/AI Company_lecture/final-handoff-ko.md",
+    "dropbox_path": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\git_materials\\final-handoff-ko.md",
+    "purpose": "Summarizes final lecture/article/demo/channel decisions and backup locations."
+  },
   "git_materials": [
     "lecture-materials/AI Company_lecture/README.md",
     "lecture-materials/AI Company_lecture/demo-script-ko.md",
@@ -67,6 +72,7 @@
     "lecture-materials/AI Company_lecture/slide-outline-ko.md",
     "lecture-materials/AI Company_lecture/blog-column-ko.md",
     "lecture-materials/AI Company_lecture/article-agent-era-marketing-planners-ko.md",
+    "lecture-materials/AI Company_lecture/final-handoff-ko.md",
     "lecture-materials/AI Company_lecture/materials-manifest.json",
     "docs/demo-scripts/correction-level-agent/demo-script-ko.md",
     "scripts/render-correction-level-agent-demo.mjs",
@@ -76,6 +82,7 @@
     "slides-md/AI-Company-lecture-full-slides.md",
     "slides-md/demo-index-ko.md",
     "column/article-agent-era-marketing-planners-ko.md",
+    "git_materials/final-handoff-ko.md",
     "demos/demo-01-text-analysis-repair.mp4",
     "demos/demo-02-pr-studio-press-release.mp4",
     "demos/demo-03-pr-studio-feedback-repair.mp4",
