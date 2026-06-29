@@ -1,0 +1,43 @@
+{
+  "projectId": "ai-company-lecture",
+  "projectName": "AI Company Lecture",
+  "ownerApp": "pr-studio",
+  "managementMode": "external-project-reference",
+  "doNotMoveFullLectureFolderIntoPrStudio": true,
+  "paths": {
+    "lectureSourceRepo": "C:\\git-app\\lectures\\courses\\AI-Company-lecture",
+    "dropboxAssetRoot": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture",
+    "prStudioProjectNotes": "C:\\git-app\\pr-studio\\docs\\demo-scripts\\ai-company-lecture"
+  },
+  "primaryAssets": {
+    "liveSlideHtml": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\slides-md\\AI-Company-lecture-full-slides.html",
+    "slideMarkdown": "C:\\git-app\\lectures\\courses\\AI-Company-lecture\\AI-Company-lecture-full-slides.md",
+    "lectureVideo": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\lecture-video\\slide-lecture-ko\\AI-Company-lecture-slide-lecture-ko.mp4",
+    "keyCaptionSrt": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\lecture-video\\slide-lecture-ko\\AI-Company-lecture-key-captions-ko.srt",
+    "demoFolder": "C:\\Users\\ciadmin\\Dropbox\\gitwork_data\\AI Company_lecture\\demos"
+  },
+  "currentIssues": [
+    "Narration is generated from slide titles and bullet text rather than a natural spoken script.",
+    "Demo sections explain features too generally instead of walking through app execution and judgment points.",
+    "Screen, narration, and subtitle timing are not yet managed as small beats.",
+    "The lecture needs separate modes for live lecture, YouTube video, and app demo clips."
+  ],
+  "targetWorkflow": [
+    "Keep lecture source and large assets in their current folders.",
+    "Use PR Studio to manage project memory, spoken scripts, demo storyboards, TTS tests, render rules, and QA notes.",
+    "Create a spoken script layer before generating TTS.",
+    "Use beat-based demo segments with visible app action, narration, subtitle, and hold duration.",
+    "Record feedback after each render and fold it back into the project notes."
+  ],
+  "codeBacklog": [
+    "external project registry",
+    "spoken script editor",
+    "narration awkwardness audit",
+    "beat-based renderer",
+    "demo capture adapters",
+    "voice A/B comparison",
+    "screen-voice alignment QA",
+    "feedback log"
+  ],
+  "createdFor": "Record how PR Studio should accumulate and improve AI Company lecture/demo production work."
+}
