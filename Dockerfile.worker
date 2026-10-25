@@ -19,6 +19,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package*.json ./
 RUN npm ci --omit=dev
+RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 npx playwright install ffmpeg
 
 COPY . .
 
