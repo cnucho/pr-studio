@@ -43,14 +43,19 @@ function mapJob(row: Record<string, unknown>): VideoAgentJob {
   };
 }
 
-export async function readVideoJob(jobId: string): Promise<VideoAgentJob> {
+export function videoJobOwnedBy(plan: unknown, userId: string) {
+  return Boolean(plan && typeof plan === "object" && (plan as Record<string, unknown>).ownerId === userId);
+}
+
+export async function readVideoJob(jobId: string, userId: string): Promise<VideoAgentJob> {
   const { data, error } = await adminClient().from("video_agent_jobs").select("*").eq("id", jobId).single();
   if (error) throw error;
+  if (!videoJobOwnedBy(data.plan, userId)) throw new Error("Video job not found.");
   return mapJob(data);
 }
 
-export async function downloadQueuedVideo(jobId: string) {
-  const job = await readVideoJob(jobId);
+export async function downloadQueuedVideo(jobId: string, userId: string) {
+  const job = await readVideoJob(jobId, userId);
   const storagePath = (job.output?.video as VideoAgentResult["video"] & { storagePath?: string })?.storagePath;
   if (!storagePath || job.status !== "completed") throw new Error("Completed video not found.");
   const { data, error } = await adminClient().storage.from(bucket).download(storagePath);
@@ -59,9 +64,9 @@ export async function downloadQueuedVideo(jobId: string) {
   return { bytes, size: bytes.byteLength, generatedAt: job.output!.video.generatedAt };
 }
 
-export async function createVideoJob({ brief, appUrl, plan }: { brief: string; appUrl: string; plan: VideoAgentPlan }) {
+export async function createVideoJob({ brief, appUrl, plan, userId }: { brief: string; appUrl: string; plan: VideoAgentPlan; userId: string }) {
   const { data, error } = await adminClient().from("video_agent_jobs")
-    .insert({ brief, app_url: appUrl, plan }).select("*").single();
+    .insert({ brief, app_url: appUrl, plan: { ...plan, ownerId: userId } }).select("*").single();
   if (error) throw error;
   return mapJob(data);
 }

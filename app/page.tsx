@@ -36,7 +36,8 @@ import {
   WandSparkles,
   Youtube,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { videoAccessToken, videoAuthClient } from "@/lib/video-auth-client";
 import {
   analyzeNews,
   analyzeYoutubeFeedback,
@@ -658,6 +659,10 @@ export default function Home() {
 function FilmStudio() {
   const [active, setActive] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const scene = scenes[active];
 
   useEffect(() => {
@@ -671,21 +676,37 @@ function FilmStudio() {
 
   useEffect(() => {
     return () => {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
+      audioRef.current?.pause();
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     };
   }, []);
 
-  function speakCurrentScene() {
-    if (!("speechSynthesis" in window)) return;
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(scene.narration);
-    utterance.lang = "ko-KR";
-    utterance.rate = 1.02;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+  async function speakCurrentScene() {
+    setVoiceError("");
+    setVoiceLoading(true);
+    try {
+      const token = await videoAccessToken();
+      const response = await fetch("/api/video-agent/voice", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: scene.narration }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? "Google 음성을 재생하지 못했습니다.");
+      }
+      audioRef.current?.pause();
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      const url = URL.createObjectURL(await response.blob());
+      audioUrlRef.current = url;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      await audio.play();
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : "Google 음성을 재생하지 못했습니다.");
+    } finally {
+      setVoiceLoading(false);
+    }
   }
 
   return (
@@ -756,10 +777,11 @@ function FilmStudio() {
           <button
             type="button"
             onClick={speakCurrentScene}
+            disabled={voiceLoading}
             className="focus-ring flex h-11 items-center justify-center rounded-md border border-line text-ink transition hover:bg-paper"
             aria-label="TTS 재생"
           >
-            <Volume2 className="h-4 w-4" />
+            {voiceLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
           </button>
           <button
             type="button"
@@ -770,6 +792,7 @@ function FilmStudio() {
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
+        {voiceError && <p role="alert" className="mt-2 text-xs text-coral">{voiceError}</p>}
 
         <div className="mt-5 flex flex-col gap-2">
           {scenes.map((item, index) => (
@@ -1302,10 +1325,46 @@ function MicroTargetingTool() {
 
 function AgentStudio() {
   const [brief, setBrief] = useState(defaultAgentBrief);
+  const [email, setEmail] = useState("");
+  const [signedIn, setSignedIn] = useState(false);
+  const [loginSent, setLoginSent] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
   const [output, setOutput] = useState<VideoAgentOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    try {
+      const client = videoAuthClient();
+      void client.auth.getSession().then(({ data }) => {
+        if (active) setSignedIn(Boolean(data.session));
+      });
+      const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+        if (active) setSignedIn(Boolean(session));
+      });
+      return () => { active = false; listener.subscription.unsubscribe(); };
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "로그인 설정을 확인할 수 없습니다.");
+    }
+  }, []);
+
+  useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
+
+  async function sendLoginLink() {
+    setError("");
+    try {
+      const { error } = await videoAuthClient().auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setLoginSent(true);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "로그인 메일을 보내지 못했습니다.");
+    }
+  }
 
   useEffect(() => {
     if (!loading) return;
@@ -1324,9 +1383,10 @@ function AgentStudio() {
     setOutput(null);
 
     try {
+      const token = await videoAccessToken();
       const response = await fetch("/api/video-agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ brief }),
       });
       const data = (await response.json()) as ApiResponse<VideoAgentOutput>;
@@ -1336,16 +1396,16 @@ function AgentStudio() {
       }
 
       if (data.queued && data.job) {
-        const job = await pollVideoJob(data.job.id);
+        const job = await pollVideoJob(data.job.id, token);
         if (job.status === "failed") {
           throw new Error(job.error ?? "영상 생성에 실패했습니다.");
         }
         if (!job.output) {
           throw new Error("완료된 영상 정보를 찾지 못했습니다.");
         }
-        setOutput(job.output);
+        await finishVideo(job.output, token);
       } else if (data.output) {
-        setOutput(data.output);
+        await finishVideo(data.output, token);
       } else {
         throw new Error("영상 생성 결과를 받지 못했습니다.");
       }
@@ -1357,12 +1417,20 @@ function AgentStudio() {
     }
   }
 
-  async function pollVideoJob(jobId: string) {
+  async function finishVideo(result: VideoAgentOutput, token: string) {
+    const response = await fetch(result.video.downloadUrl, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    if (!response.ok) throw new Error("생성된 영상 파일을 가져오지 못했습니다.");
+    setVideoUrl(URL.createObjectURL(await response.blob()));
+    setOutput(result);
+  }
+
+  async function pollVideoJob(jobId: string, token: string) {
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < 15 * 60 * 1000) {
       const response = await fetch(`/api/video-agent/${encodeURIComponent(jobId)}`, {
         cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await response.json()) as {
         ok: boolean;
@@ -1388,9 +1456,7 @@ function AgentStudio() {
     throw new Error("영상 생성 작업이 너무 오래 걸려 중단했습니다.");
   }
 
-  const previewUrl = output
-    ? `${output.video.downloadUrl}?v=${encodeURIComponent(output.video.generatedAt)}`
-    : "";
+  const previewUrl = videoUrl;
   const generatedAt = output
     ? new Date(output.video.generatedAt).toLocaleString("ko-KR", { hour12: false })
     : "";
@@ -1404,7 +1470,7 @@ function AgentStudio() {
         <button
           type="button"
           onClick={runAgent}
-          disabled={loading}
+          disabled={loading || !signedIn}
           className="focus-ring flex h-11 items-center gap-2 rounded-md bg-cobalt px-4 text-sm font-semibold text-white transition hover:bg-cobalt/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -1414,6 +1480,16 @@ function AgentStudio() {
     >
       <div className="grid gap-5 xl:grid-cols-[430px_1fr]">
         <section className="grid gap-4 rounded-lg border border-line bg-white p-4 shadow-soft">
+          {!signedIn ? (
+            <div className="rounded-lg border border-line bg-canvas p-3">
+              <p className="text-sm font-semibold">영상 제작자 로그인</p>
+              <div className="mt-2 flex gap-2">
+                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일" aria-label="로그인 이메일" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
+                <button type="button" onClick={sendLoginLink} disabled={!email.trim()} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">로그인 링크</button>
+              </div>
+              {loginSent && <p className="mt-2 text-xs text-ink/60">이메일의 로그인 링크를 열면 이 화면으로 돌아옵니다.</p>}
+            </div>
+          ) : <p className="text-xs font-semibold text-mint">영상 제작자 로그인됨</p>}
           <TextArea label="Agent Brief" value={brief} rows={8} onChange={setBrief} />
 
           <div className="grid gap-3 sm:grid-cols-2">

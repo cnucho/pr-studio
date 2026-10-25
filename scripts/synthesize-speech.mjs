@@ -207,13 +207,20 @@ async function googleAccessToken() {
   return data.access_token;
 }
 
-function googleInput(text) {
-  if (process.env.GOOGLE_TTS_INPUT_MODE === "markup") {
+function googleInput(text, language) {
+  const mode = process.env.GOOGLE_TTS_INPUT_MODE ?? (language === "ko" ? "paced-ssml" : "text");
+  if (mode === "markup") {
     return { markup: text };
   }
 
-  if (process.env.GOOGLE_TTS_INPUT_MODE === "ssml") {
+  if (mode === "ssml") {
     return { ssml: text };
+  }
+
+  if (mode === "paced-ssml" && language === "ko") {
+    const escapeXml = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    const sentences = text.split(/(?<=[.!?。！？])\s+|\n+/u).map((item) => item.trim()).filter(Boolean);
+    return { ssml: `<speak>${sentences.map((sentence) => `<s>${escapeXml(sentence)}</s>`).join('<break time="220ms"/>')}</speak>` };
   }
 
   return { text };
@@ -308,7 +315,7 @@ async function runGoogleSpeech(text, language) {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        input: googleInput(chunks[index]),
+        input: googleInput(chunks[index], language),
         voice: { languageCode, name: googleVoice(language) },
         audioConfig: { audioEncoding: "LINEAR16", speakingRate: Number(process.env.GOOGLE_TTS_SPEAKING_RATE ?? 0.94) },
       }),

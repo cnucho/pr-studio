@@ -160,7 +160,7 @@ function assText(value) {
     .replaceAll("\\", "\\\\")
     .replaceAll("{", "\\{")
     .replaceAll("}", "\\}")
-    .replaceAll(" -> ", " \\N ");
+    .replaceAll(" -> ", " → ");
 }
 
 function audioDuration(file) {
