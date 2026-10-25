@@ -207,16 +207,97 @@ async function googleAccessToken() {
   return data.access_token;
 }
 
-function googleInput(text) {
-  if (process.env.GOOGLE_TTS_INPUT_MODE === "markup") {
+function googleInput(text, language) {
+  const mode = process.env.GOOGLE_TTS_INPUT_MODE ?? (language === "ko" ? "paced-ssml" : "text");
+  if (mode === "markup") {
     return { markup: text };
   }
 
-  if (process.env.GOOGLE_TTS_INPUT_MODE === "ssml") {
+  if (mode === "ssml") {
     return { ssml: text };
   }
 
+  if (mode === "paced-ssml" && language === "ko") {
+    const escapeXml = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    const sentences = text.split(/(?<=[.!?。！？])\s+|\n+/u).map((item) => item.trim()).filter(Boolean);
+    return { ssml: `<speak>${sentences.map((sentence) => `<s>${escapeXml(sentence)}</s>`).join('<break time="220ms"/>')}</speak>` };
+  }
+
   return { text };
+}
+
+function splitGoogleText(text, maxBytes = 4500) {
+  if (Buffer.byteLength(text, "utf8") <= maxBytes) return [text];
+  const sentences = text.split(/(?<=[.!?。！？]|다\.)\s+/u).filter(Boolean);
+  const chunks = [];
+  let current = "";
+  for (const sentence of sentences) {
+    const candidate = current ? `${current} ${sentence}` : sentence;
+    if (Buffer.byteLength(candidate, "utf8") <= maxBytes) {
+      current = candidate;
+      continue;
+    }
+    if (current) chunks.push(current);
+    if (Buffer.byteLength(sentence, "utf8") > maxBytes) {
+      let fragment = "";
+      for (const char of sentence) {
+        if (Buffer.byteLength(fragment + char, "utf8") > maxBytes) {
+          chunks.push(fragment);
+          fragment = char;
+        } else fragment += char;
+      }
+      current = fragment;
+    } else current = sentence;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function prepareGoogleText(text, language) {
+  const normalized = text
+    .normalize("NFC")
+    .replace(/[\u200B-\u200D\uFEFF]/gu, "")
+    .replace(/[ \t]+/gu, " ")
+    .replace(/ *\r?\n */gu, "\n")
+    .trim();
+
+  if (language !== "ko") return normalized;
+
+  return normalized
+    .split(/\n+/u)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => /[.!?。！？]$/u.test(line) ? line : `${line}.`)
+    .join("\n");
+}
+
+function splitPreparedGoogleText(text, maxBytes = 4500) {
+  const sentences = text
+    .split(/(?<=[.!?。！？])\s+|\n+/u)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+  const chunks = [];
+  let current = "";
+  for (const sentence of sentences) {
+    const candidate = current ? `${current} ${sentence}` : sentence;
+    if (Buffer.byteLength(candidate, "utf8") <= maxBytes) {
+      current = candidate;
+      continue;
+    }
+    if (current) chunks.push(current);
+    if (Buffer.byteLength(sentence, "utf8") > maxBytes) {
+      let fragment = "";
+      for (const char of sentence) {
+        if (Buffer.byteLength(fragment + char, "utf8") > maxBytes) {
+          chunks.push(fragment);
+          fragment = char;
+        } else fragment += char;
+      }
+      current = fragment;
+    } else current = sentence;
+  }
+  if (current) chunks.push(current);
+  return chunks;
 }
 
 async function runGoogleSpeech(text, language) {
@@ -224,36 +305,39 @@ async function runGoogleSpeech(text, language) {
   const languageCode = googleLanguageCode(language);
   const endpoint =
     process.env.GOOGLE_TTS_ENDPOINT ?? "https://texttospeech.googleapis.com/v1/text:synthesize";
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      input: googleInput(text),
-      voice: {
-        languageCode,
-        name: googleVoice(language),
-      },
-      audioConfig: {
-        audioEncoding: "LINEAR16",
-        speakingRate: Number(process.env.GOOGLE_TTS_SPEAKING_RATE ?? 0.94),
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(`Google speech failed: ${message}`);
+  const preparedText = prepareGoogleText(text, language);
+  const chunks = language === "ko"
+    ? splitPreparedGoogleText(preparedText)
+    : splitGoogleText(preparedText);
+  const partPaths = [];
+  for (let index = 0; index < chunks.length; index += 1) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: googleInput(chunks[index], language),
+        voice: { languageCode, name: googleVoice(language) },
+        audioConfig: { audioEncoding: "LINEAR16", speakingRate: Number(process.env.GOOGLE_TTS_SPEAKING_RATE ?? 0.94) },
+      }),
+    });
+    if (!response.ok) {
+      const message = await response.text().catch(() => response.statusText);
+      throw new Error(`Google speech failed for chunk ${index + 1}/${chunks.length}: ${message}`);
+    }
+    const data = await response.json();
+    if (!data.audioContent) throw new Error(`Google speech did not return audioContent for chunk ${index + 1}.`);
+    const partPath = `${outputPath}.google-part-${index}.wav`;
+    await writeFile(partPath, Buffer.from(data.audioContent, "base64"));
+    partPaths.push(partPath);
   }
-
-  const data = await response.json();
-  if (!data.audioContent) {
-    throw new Error("Google speech did not return audioContent.");
+  if (partPaths.length === 1) {
+    await writeFile(outputPath, await readFile(partPaths[0]));
+  } else {
+    const inputs = partPaths.flatMap((partPath) => ["-i", partPath]);
+    const streams = partPaths.map((_, index) => `[${index}:a]`).join("");
+    runCommand("ffmpeg", ["-y", "-loglevel", "error", ...inputs, "-filter_complex", `${streams}concat=n=${partPaths.length}:v=0:a=1[out]`, "-map", "[out]", outputPath]);
   }
-
-  await writeFile(outputPath, Buffer.from(data.audioContent, "base64"));
+  await Promise.all(partPaths.map((partPath) => unlink(partPath).catch(() => {})));
 }
 
 function elevenLabsVoice(language) {
