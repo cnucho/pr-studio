@@ -6,10 +6,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     ffmpeg \
     fonts-noto-cjk \
+    tesseract-ocr \
+    tesseract-ocr-kor \
     ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 ENV CHROME_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package*.json ./
@@ -24,4 +28,6 @@ RUN npm run build
 
 EXPOSE 3016
 
+# Web: npm run start. Worker service overrides this with: npm run worker:video
+# Chromium, FFmpeg, Noto CJK, and Tesseract run inside this image. Desktop MCP is not used.
 CMD ["npm", "run", "start"]

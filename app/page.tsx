@@ -96,6 +96,17 @@ type VideoAgentOutput = {
     steps: VideoAgentPlanStep[];
     qualityChecks: string[];
     note?: string;
+    manifest?: {
+      track: string;
+      runtime: {
+        capture: string;
+        cards: string;
+        voice: string;
+        assemble: string;
+        review: string;
+      };
+      beats: { id: string; medium: string; point?: string; subtitle: string }[];
+    };
   };
   runSteps: VideoAgentRunStep[];
   video: {
@@ -189,32 +200,32 @@ const studioStats = [
 ];
 
 const agentProgress = [
-  "GPT 제작 계획",
-  "앱 화면 캡처",
-  "MP4 렌더링",
-  "영상 검증",
+  "Beat 확정",
+  "동작 녹화",
+  "음성·카드 합성",
+  "프레임 검토",
 ];
 
 function fallbackPlanStepsForUi(): VideoAgentPlanStep[] {
   return [
     {
-      title: "제작 계획",
-      detail: "브리프를 읽고 YouTube 데모의 메시지와 화면 순서를 정합니다.",
+      title: "Beat 확정",
+      detail: "브리프와 허용된 화면만으로 장면 순서, 요지, 자막을 정합니다.",
       tool: "plan",
     },
     {
-      title: "화면 캡처",
-      detail: "PR Studio의 실제 탭과 생성 결과를 브라우저에서 캡처합니다.",
+      title: "동작 녹화",
+      detail: "Railway 워커의 Chromium이 입력과 실행을 녹화합니다.",
       tool: "capture",
     },
     {
-      title: "MP4 렌더링",
-      detail: "캡처 이미지, 내레이션, 자막을 16:9 영상으로 조립합니다.",
+      title: "음성·카드 합성",
+      detail: "표, 도식, 동작 구간, 문장별 음성을 FFmpeg로 조립합니다.",
       tool: "render",
     },
     {
-      title: "검증",
-      detail: "완성 파일의 해상도, 길이, 크기를 확인합니다.",
+      title: "프레임 검토",
+      detail: "워커의 FFmpeg와 Tesseract가 해상도, 오디오, 화면 글자를 확인합니다.",
       tool: "verify",
     },
   ];
@@ -1636,8 +1647,8 @@ function AgentStudio() {
                 </p>
                 <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-ink/58">
                   {loading
-                    ? "앱이 실제 화면을 캡처하고 MP4를 렌더링하는 중입니다."
-                    : "브리프를 기준으로 제작 계획, 화면 캡처, 렌더링, 검증까지 실행합니다."}
+                    ? "워커가 앱을 녹화하고 표·도식과 음성을 합성하는 중입니다."
+                    : "브리프에 맞는 장면을 고른 뒤 Chromium, FFmpeg, Tesseract로 영상을 만듭니다."}
                 </p>
               </div>
             )}
@@ -1654,6 +1665,13 @@ function AgentStudio() {
                   <div key={`${step.title}-${index}`} className="rounded-md border border-line bg-canvas p-3">
                     <p className="text-sm font-semibold">{step.title}</p>
                     <p className="mt-1 text-xs font-medium leading-relaxed text-ink/58">{step.detail}</p>
+                  </div>
+                ))}
+                {output?.plan.manifest?.beats.map((beat) => (
+                  <div key={beat.id} className="rounded-md border border-line p-3">
+                    <p className="text-sm font-semibold">{beat.point || beat.subtitle}</p>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-ink/58">{beat.subtitle}</p>
+                    <p className="mt-1 text-xs font-medium text-ink/44">{beat.medium}</p>
                   </div>
                 ))}
               </div>

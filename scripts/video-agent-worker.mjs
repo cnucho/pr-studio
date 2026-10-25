@@ -1,8 +1,9 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
+import { resolveBinary } from "./video-runtime.mjs";
 
 const root = process.cwd();
 const finalVideoPath = path.join(root, "out", "pr-studio-final.mp4");
@@ -42,10 +43,16 @@ async function processJob(job) {
   const env = { ...process.env, PR_STRATEGY_APP_URL: job.app_url };
   const runSteps = [];
   try {
+    if (!job.plan?.manifest?.beats?.length) throw new Error("2.0 manifest가 없습니다.");
+    const manifestPath = path.join(root, "video-assets", "v2", "manifest.json");
+    await mkdir(path.dirname(manifestPath), { recursive: true });
+    await writeFile(manifestPath, JSON.stringify(job.plan.manifest, null, 2));
+    const ffprobe = resolveBinary("ffprobe", env);
     for (const [title, command, args] of [
-      ["화면 캡처", "node", ["scripts/capture-storyboard.mjs"]],
-      ["MP4 렌더링", "node", ["scripts/render-video.mjs"]],
-      ["영상 검증", "ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", finalVideoPath]],
+      ["동작 녹화", "node", ["scripts/capture-video-v2.mjs", "--manifest", manifestPath]],
+      ["MP4 렌더링", "node", ["scripts/render-video-v2.mjs", "--manifest", manifestPath]],
+      ["프레임 검토", "node", ["scripts/review-video-v2.mjs", "--manifest", manifestPath, "--video", finalVideoPath]],
+      ["영상 검증", ffprobe, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", finalVideoPath]],
     ]) {
       const step = { ...run(command, args, env), title };
       runSteps.push(step);

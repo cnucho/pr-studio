@@ -124,7 +124,11 @@ await mkdir(outDir, { recursive: true });
 const browser = await playwright.chromium.launch({
   headless: true,
   ...(chromePath ? { executablePath: chromePath } : {}),
-  args: ["--disable-dev-shm-usage", "--font-render-hinting=none"],
+  args: [
+    "--disable-dev-shm-usage",
+    "--font-render-hinting=none",
+    ...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []),
+  ],
 });
 
 const page = await browser.newPage({
