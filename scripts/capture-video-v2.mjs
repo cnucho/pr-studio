@@ -12,8 +12,9 @@ function argument(name, fallback) {
   return index >= 0 && process.argv[index + 1] ? path.resolve(process.argv[index + 1]) : fallback;
 }
 
-const manifestPath = argument("--manifest", path.join(root, "video-assets", "v2", "manifest.json"));
-const assetDir = path.join(root, "video-assets", "v2");
+const workDir = argument("--work-dir", path.join(root, "video-assets", "v2"));
+const manifestPath = argument("--manifest", path.join(workDir, "manifest.json"));
+const assetDir = workDir;
 const screenDir = path.join(assetDir, "screens");
 const appUrl = process.env.PR_STRATEGY_APP_URL ?? process.env.PR_AI_DEMO_URL ?? "http://127.0.0.1:3016";
 

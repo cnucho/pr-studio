@@ -425,8 +425,10 @@ try {
   } else if (provider === "openai" || (provider === "auto" && process.env.OPENAI_API_KEY)) {
     await runOpenAiSpeech(text, language);
     console.log(`OpenAI TTS wrote ${outputPath}`);
-  } else {
+  } else if (provider === "system" || provider === "auto") {
     runSystemSpeech();
+  } else {
+    throw new Error(`Unsupported TTS provider: ${provider}`);
   }
 } catch (error) {
   if (provider === "google" || provider === "openai" || provider === "elevenlabs") {

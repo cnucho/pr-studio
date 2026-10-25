@@ -10,8 +10,9 @@ describe("video agent access", () => {
   });
 
   it("requires the job's server-bound owner for reads and downloads", () => {
-    expect(videoJobOwnedBy({ ownerId: "user-a" }, "user-a")).toBe(true);
-    expect(videoJobOwnedBy({ ownerId: "user-a" }, "user-b")).toBe(false);
-    expect(videoJobOwnedBy({}, "user-a")).toBe(false);
+    expect(videoJobOwnedBy({ ownerId: "user-a" }, undefined, "user-a")).toBe(true);
+    expect(videoJobOwnedBy({ ownerId: "user-a" }, undefined, "user-b")).toBe(false);
+    expect(videoJobOwnedBy({}, { ownerId: "user-a" }, "user-a")).toBe(true);
+    expect(videoJobOwnedBy({}, {}, "user-a")).toBe(false);
   });
 });

@@ -1,0 +1,11 @@
+.git
+.next
+node_modules
+coverage
+out
+dist
+recordings
+video-assets
+*.log
+.env
+.env.*

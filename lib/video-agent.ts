@@ -1,7 +1,23 @@
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { buildPlanningDossier, createManifest, type BeatDraft, type BeatManifest } from "@/lib/video-beats";
+import { z } from "zod";
+import { buildPlanningDossier, contentManifestIssues, createManifest, trackForBrief, type BeatDraft, type BeatManifest } from "./video-beats";
+import { videoArtifactPaths } from "./video-artifacts";
+import {
+  blockedContentReview,
+  collectionOrderSchema,
+  contentReviewSchema,
+  contentReadyForProduction,
+  legacyBrief,
+  videoBriefSchema,
+  type CollectionOrder,
+  type CollectionReport,
+  type ContentReview,
+  type PlanningDecision,
+  type VideoBrief,
+} from "./video-planning";
 
 export type VideoAgentMode = "gpt" | "local";
 
@@ -15,11 +31,18 @@ export type VideoAgentPlan = {
   mode: VideoAgentMode;
   model: string;
   pipeline: "2.0";
+  round: 1 | 2 | 3;
   summary: string;
   viewerPromise: string;
   steps: VideoAgentPlanStep[];
   qualityChecks: string[];
-  manifest: BeatManifest;
+  beats: BeatDraft[];
+  collectionOrders: CollectionOrder[];
+  collectionReports: CollectionReport[];
+  contentReview: ContentReview;
+  decision: PlanningDecision;
+  productionReady: boolean;
+  manifest?: BeatManifest;
   note?: string;
 };
 
@@ -33,6 +56,7 @@ export type VideoAgentRunStep = {
 
 export type VideoAgentVideo = {
   path: string;
+  storagePath?: string;
   downloadUrl: string;
   width: number;
   height: number;
@@ -41,11 +65,21 @@ export type VideoAgentVideo = {
   generatedAt: string;
 };
 
-export type VideoAgentResult = {
+export type VideoAgentProducedResult = {
+  outcome: "produced";
   plan: VideoAgentPlan;
   runSteps: VideoAgentRunStep[];
   video: VideoAgentVideo;
 };
+
+export type VideoAgentPlanningResult = {
+  outcome: "plan_exhausted";
+  plan: VideoAgentPlan;
+  runSteps: VideoAgentRunStep[];
+  video?: never;
+};
+
+export type VideoAgentResult = VideoAgentProducedResult | VideoAgentPlanningResult;
 
 type CommandResult = {
   status: "completed" | "failed";
@@ -55,7 +89,6 @@ type CommandResult = {
 };
 
 const root = process.cwd();
-const finalVideoPath = path.join(root, "out", "pr-studio-final.mp4");
 
 const fallbackPlanSteps: VideoAgentPlanStep[] = [
   {
@@ -80,6 +113,56 @@ const fallbackPlanSteps: VideoAgentPlanStep[] = [
   },
 ];
 
+const planningResponseSchema = z
+  .object({
+    summary: z.string().trim().min(1).max(500),
+    viewerPromise: z.string().trim().min(1).max(500),
+    steps: z
+      .array(
+        z
+          .object({
+            title: z.string().trim().min(1).max(100),
+            detail: z.string().trim().min(1).max(500),
+            tool: z.enum(["plan", "capture", "render", "verify"]),
+          })
+          .strict(),
+      )
+      .min(4)
+      .max(6),
+    qualityChecks: z.array(z.string().trim().min(1).max(300)).min(3).max(5),
+    beats: z
+      .array(
+        z
+          .object({
+            screenId: z.string().trim().min(1).max(100),
+            purpose: z.string().trim().min(1).max(500),
+            viewerTakeaway: z.string().trim().min(1).max(500),
+            action: z.string().trim().min(1).max(300),
+            focus: z.string().trim().min(1).max(300),
+            narration: z.string().trim().min(1).max(1_000),
+            subtitle: z.string().trim().min(1).max(80),
+            transitionReason: z.string().trim().min(1).max(500),
+          })
+          .strict(),
+      )
+      .min(4)
+      .max(7),
+    collectionOrders: z.array(collectionOrderSchema).max(8),
+    contentReview: contentReviewSchema,
+    decision: z.enum(["collect", "produce"]),
+  })
+  .strict();
+
+const contentCriterionSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    status: { type: "string", enum: ["pass", "revise"] },
+    rationale: { type: "string", minLength: 1, maxLength: 500 },
+  },
+  required: ["status", "rationale"],
+};
+
 function planningSchema(screenIds: string[]) {
   return {
   type: "object",
@@ -87,10 +170,14 @@ function planningSchema(screenIds: string[]) {
   properties: {
     summary: {
       type: "string",
+      minLength: 1,
+      maxLength: 500,
       description: "One sentence explaining the video production plan.",
     },
     viewerPromise: {
       type: "string",
+      minLength: 1,
+      maxLength: 500,
       description: "The concrete promise this video should make to viewers.",
     },
     steps: {
@@ -101,8 +188,8 @@ function planningSchema(screenIds: string[]) {
         type: "object",
         additionalProperties: false,
         properties: {
-          title: { type: "string" },
-          detail: { type: "string" },
+          title: { type: "string", minLength: 1, maxLength: 100 },
+          detail: { type: "string", minLength: 1, maxLength: 500 },
           tool: {
             type: "string",
             enum: ["plan", "capture", "render", "verify"],
@@ -115,7 +202,7 @@ function planningSchema(screenIds: string[]) {
       type: "array",
       minItems: 3,
       maxItems: 5,
-      items: { type: "string" },
+      items: { type: "string", minLength: 1, maxLength: 300 },
     },
     beats: {
       type: "array",
@@ -126,25 +213,69 @@ function planningSchema(screenIds: string[]) {
         additionalProperties: false,
         properties: {
           screenId: { type: "string", enum: screenIds },
-          action: { type: "string" },
-          focus: { type: "string" },
-          point: { type: "string", description: "What the viewer should understand from this scene." },
-          narration: { type: "string" },
-          subtitle: { type: "string" },
+          purpose: { type: "string", minLength: 1, maxLength: 500, description: "Why this scene is necessary for the video purpose." },
+          viewerTakeaway: { type: "string", minLength: 1, maxLength: 500, description: "What the viewer should understand from this scene." },
+          action: { type: "string", minLength: 1, maxLength: 300 },
+          focus: { type: "string", minLength: 1, maxLength: 300 },
+          narration: { type: "string", minLength: 1, maxLength: 1_000 },
+          subtitle: { type: "string", minLength: 1, maxLength: 80 },
+          transitionReason: { type: "string", minLength: 1, maxLength: 500, description: "Why the next scene follows this one." },
         },
-        required: ["screenId", "action", "focus", "point", "narration", "subtitle"],
+        required: ["screenId", "purpose", "viewerTakeaway", "action", "focus", "narration", "subtitle", "transitionReason"],
       },
     },
     collectionOrders: {
       type: "array",
-      items: { type: "string" },
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          instruction: { type: "string", minLength: 1, maxLength: 500 },
+          capabilityId: {
+            type: "string",
+            enum: ["fixture", "screen-observation", "preset", "card", "video-analysis", "unknown"],
+          },
+        },
+        required: ["instruction", "capabilityId"],
+      },
+    },
+    contentReview: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        objectiveFit: contentCriterionSchema,
+        audienceFit: contentCriterionSchema,
+        narrativeLogic: contentCriterionSchema,
+        evidenceFit: contentCriterionSchema,
+        narrationNaturalness: contentCriterionSchema,
+        subtitleFit: contentCriterionSchema,
+        visualFit: contentCriterionSchema,
+        readyToProduce: { type: "boolean" },
+        blockingIssues: {
+          type: "array",
+          maxItems: 8,
+          items: { type: "string", minLength: 1, maxLength: 500 },
+        },
+      },
+      required: [
+        "objectiveFit",
+        "audienceFit",
+        "narrativeLogic",
+        "evidenceFit",
+        "narrationNaturalness",
+        "subtitleFit",
+        "visualFit",
+        "readyToProduce",
+        "blockingIssues",
+      ],
     },
     decision: {
       type: "string",
       enum: ["collect", "produce"],
     },
   },
-  required: ["summary", "viewerPromise", "steps", "qualityChecks", "beats", "collectionOrders", "decision"],
+  required: ["summary", "viewerPromise", "steps", "qualityChecks", "beats", "collectionOrders", "contentReview", "decision"],
   };
 }
 
@@ -155,11 +286,22 @@ function trimLog(value: string, maxLength = 1400) {
 }
 
 function finishPlan(
-  brief: string,
-  base: Omit<VideoAgentPlan, "pipeline" | "manifest" | "note">,
+  brief: VideoBrief,
+  base: Omit<VideoAgentPlan, "pipeline" | "manifest" | "note" | "productionReady" | "beats">,
   drafts?: BeatDraft[],
   note?: string,
 ): VideoAgentPlan {
+  const beats = drafts ?? [];
+  if (base.decision !== "produce" || !contentReadyForProduction(base.contentReview)) {
+    return {
+      ...base,
+      pipeline: "2.0",
+      beats,
+      productionReady: false,
+      note,
+    };
+  }
+
   const result = createManifest({
     brief,
     mode: base.mode,
@@ -168,25 +310,44 @@ function finishPlan(
     viewerPromise: base.viewerPromise,
     drafts,
   });
-  const combined = [note, result.note].filter(Boolean).join(" ");
+  const manifestIssues = contentManifestIssues(result.manifest);
+  const productionReady = base.mode === "gpt" && result.source === "model" && manifestIssues.length === 0;
+  const combined = [
+    note,
+    result.note,
+    manifestIssues.length > 0 ? `콘텐츠 매니페스트 문제: ${manifestIssues.join(" ")}` : undefined,
+    productionReady ? undefined : "기획 장면이 콘텐츠 제작 조건을 충족하지 않아 제작을 보류했습니다.",
+  ].filter(Boolean).join(" ");
   return {
     ...base,
     pipeline: "2.0",
-    manifest: result.manifest,
+    beats,
+    productionReady,
+    manifest: productionReady ? result.manifest : undefined,
     note: combined || undefined,
   };
 }
 
-function fallbackPlan(brief: string, note?: string): VideoAgentPlan {
+function fallbackPlan(
+  brief: VideoBrief,
+  note?: string,
+  round: 1 | 2 | 3 = 1,
+  collectionReports: CollectionReport[] = [],
+): VideoAgentPlan {
   return finishPlan(
     brief,
     {
       mode: "local",
       model: "local-planner",
+      round,
       summary: "PR Studio의 실제 화면과 생성 결과를 캡처해 YouTube용 데모 영상으로 렌더링합니다.",
       viewerPromise: "홍보담당자가 입력, 실행, 결과를 같은 장면에서 확인할 수 있음을 보여줍니다.",
       steps: fallbackPlanSteps,
       qualityChecks: ["허용된 화면만 사용", "1920x1080과 오디오", "화면에서 확인한 문구", "규칙 기반 기능을 모델 생성으로 설명하지 않음"],
+      collectionOrders: [],
+      collectionReports,
+      contentReview: blockedContentReview(note ?? "기획 모델의 검토가 완료되지 않았습니다."),
+      decision: "collect",
     },
     undefined,
     note,
@@ -219,14 +380,47 @@ function extractResponseText(data: unknown) {
   );
 }
 
-export async function createVideoAgentPlan(brief: string): Promise<VideoAgentPlan> {
+export type VideoPlanningContext = {
+  round?: 1 | 2 | 3;
+  previousPlans?: VideoAgentPlan[];
+  collectionReports?: CollectionReport[];
+};
+
+function normalizePlanningBrief(input: string | VideoBrief) {
+  return typeof input === "string"
+    ? legacyBrief(input, trackForBrief(input))
+    : videoBriefSchema.parse(input);
+}
+
+export async function createVideoAgentPlan(
+  inputBrief: string | VideoBrief,
+  context: VideoPlanningContext = {},
+): Promise<VideoAgentPlan> {
+  const brief = normalizePlanningBrief(inputBrief);
+  const round = context.round ?? 1;
+  const collectionReports = context.collectionReports ?? [];
+  const fallback = (note: string) => fallbackPlan(brief, note, round, collectionReports);
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return fallbackPlan(brief, "OPENAI_API_KEY가 없어 로컬 플래너로 실행했습니다.");
+    return fallback("OPENAI_API_KEY가 없어 콘텐츠 기획을 완료하지 못했습니다.");
   }
 
   const model = process.env.OPENAI_MODEL ?? "gpt-5.5";
   const dossier = buildPlanningDossier(brief);
+  const previousPlans = (context.previousPlans ?? []).map((plan) => ({
+    round: plan.round,
+    summary: plan.summary,
+    viewerPromise: plan.viewerPromise,
+    decision: plan.decision,
+    blockingIssues: plan.contentReview.blockingIssues,
+    collectionOrders: plan.collectionOrders,
+  }));
+  const planningInput = [
+    dossier.text,
+    `현재 기획 회차: ${round}/3`,
+    previousPlans.length > 0 ? `이전 기획 요약:\n${JSON.stringify(previousPlans, null, 2)}` : "",
+    collectionReports.length > 0 ? `직전 수집 보고:\n${JSON.stringify(collectionReports, null, 2)}` : "",
+  ].filter(Boolean).join("\n\n");
   let response: Response;
 
   try {
@@ -242,11 +436,11 @@ export async function createVideoAgentPlan(brief: string): Promise<VideoAgentPla
           {
             role: "system",
             content:
-              "너는 PR Studio의 영상 내용 기획자다. 한국어 JSON만 반환한다. 1차에서는 브리프와 영상 종류 기본값으로 목적, 길이, 장면 윤곽을 정한다. 수집 지시는 문장 그대로 적고, 앱에 없으면 없음으로 돌아온다. decision이 produce일 때만 촬영한다.",
+              "너는 PR Studio의 콘텐츠 중심 영상 기획자다. 화려함보다 목적과 대상에 맞는 내용, 자연스러운 내레이션, 간결한 자막, 설명과 화면의 일치를 우선한다. 한국어 JSON만 반환한다. 각 장면에 목적, 시청자가 이해할 내용, 실제 화면 동작, 다음 장면으로 넘어가는 이유를 구체적으로 쓴다. 자막은 내레이션 전체를 복사하지 말고 핵심만 80자 이내로 쓴다. 각 품질 항목을 엄격하게 점검하고 미해결 문제가 있으면 collect를 선택한다. 수집 지시는 자유로운 문장으로 쓰되 실행 가능한 capabilityId를 함께 고른다. 모든 품질 항목이 통과하고 blockingIssues가 없을 때만 readyToProduce와 decision을 produce로 정한다.",
           },
           {
             role: "user",
-            content: dossier.text,
+            content: planningInput,
           },
         ],
         text: {
@@ -257,13 +451,11 @@ export async function createVideoAgentPlan(brief: string): Promise<VideoAgentPla
             schema: planningSchema(dossier.screenIds),
           },
         },
+        max_output_tokens: 5_000,
       }),
     });
   } catch (error) {
-    return fallbackPlan(
-      brief,
-      `GPT 플래너 연결 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`,
-    );
+    return fallback(`GPT 플래너 연결 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
   }
 
   const data = (await response.json().catch(() => ({}))) as unknown;
@@ -272,32 +464,35 @@ export async function createVideoAgentPlan(brief: string): Promise<VideoAgentPla
       typeof data === "object" && data && "error" in data
         ? JSON.stringify((data as { error: unknown }).error)
         : response.statusText;
-    return fallbackPlan(brief, `GPT 플래너 요청 실패: ${message}`);
+    return fallback(`GPT 플래너 요청 실패: ${message}`);
   }
 
   const text = extractResponseText(data);
   if (!text) {
-    return fallbackPlan(brief, "GPT 플래너가 빈 응답을 반환해 로컬 플래너로 실행했습니다.");
+    return fallback("GPT 플래너가 빈 응답을 반환해 콘텐츠 기획을 완료하지 못했습니다.");
   }
 
   try {
-    const parsed = JSON.parse(text) as Omit<VideoAgentPlan, "mode" | "model" | "pipeline" | "manifest"> & {
-      beats?: BeatDraft[];
-    };
+    const parsed = planningResponseSchema.parse(JSON.parse(text));
     return finishPlan(
       brief,
       {
         mode: "gpt",
         model,
+        round,
         summary: parsed.summary,
         viewerPromise: parsed.viewerPromise,
         steps: parsed.steps,
         qualityChecks: parsed.qualityChecks,
+        collectionOrders: parsed.collectionOrders,
+        collectionReports,
+        contentReview: parsed.contentReview,
+        decision: parsed.decision,
       },
       parsed.beats,
     );
   } catch {
-    return fallbackPlan(brief, "GPT 플래너 응답을 JSON으로 해석하지 못해 로컬 플래너로 실행했습니다.");
+    return fallback("GPT 플래너 응답이 콘텐츠 기획 계약을 충족하지 않았습니다.");
   }
 }
 
@@ -366,24 +561,29 @@ export async function runVideoAgent({
   brief,
   appUrl,
 }: {
-  brief: string;
+  brief: string | VideoBrief;
   appUrl: string;
 }): Promise<VideoAgentResult> {
   const plan = await createVideoAgentPlan(brief);
+  if (!plan.productionReady || !plan.manifest) {
+    const reason = plan.contentReview.blockingIssues.join(" ") || "콘텐츠 기획이 제작 준비 조건을 통과하지 않았습니다.";
+    throw new Error(`영상 제작 보류: ${reason}`);
+  }
   const runSteps: VideoAgentRunStep[] = [];
   const env = {
     ...process.env,
     PR_STRATEGY_APP_URL: appUrl,
   };
 
-  const manifestPath = path.join(root, "video-assets", "v2", "manifest.json");
-  await mkdir(path.dirname(manifestPath), { recursive: true });
+  const runId = randomUUID();
+  const { workDir, manifestPath, finalVideoPath, reviewPath } = videoArtifactPaths(root, `inline-${runId}`);
+  await mkdir(path.dirname(finalVideoPath), { recursive: true });
   await writeFile(manifestPath, JSON.stringify(plan.manifest, null, 2));
 
   const capture = await runAgentStep(
     "동작 녹화",
     "node",
-    ["scripts/capture-video-v2.mjs", "--manifest", manifestPath],
+    ["scripts/capture-video-v2.mjs", "--manifest", manifestPath, "--work-dir", workDir],
     env,
   );
   runSteps.push(capture);
@@ -392,7 +592,7 @@ export async function runVideoAgent({
   const render = await runAgentStep(
     "MP4 렌더링",
     "node",
-    ["scripts/render-video-v2.mjs", "--manifest", manifestPath],
+    ["scripts/render-video-v2.mjs", "--manifest", manifestPath, "--work-dir", workDir, "--output", finalVideoPath],
     env,
   );
   runSteps.push(render);
@@ -401,7 +601,7 @@ export async function runVideoAgent({
   const review = await runAgentStep(
     "프레임 검토",
     "node",
-    ["scripts/review-video-v2.mjs", "--manifest", manifestPath, "--video", finalVideoPath],
+    ["scripts/review-video-v2.mjs", "--manifest", manifestPath, "--work-dir", workDir, "--video", finalVideoPath, "--review", reviewPath],
     env,
   );
   runSteps.push(review);
@@ -433,11 +633,12 @@ export async function runVideoAgent({
   const file = await stat(finalVideoPath);
 
   return {
+    outcome: "produced",
     plan,
     runSteps,
     video: {
       path: finalVideoPath,
-      downloadUrl: "/api/video-agent/file",
+      downloadUrl: `/api/video-agent/file?runId=${encodeURIComponent(runId)}`,
       width: metadata.streams?.[0]?.width ?? 0,
       height: metadata.streams?.[0]?.height ?? 0,
       duration: Number(metadata.format?.duration ?? 0),

@@ -32,22 +32,26 @@ PR Studio는 보도자료, 뉴스 분석, 영상 기획, AI 글쓰기, 타겟팅
 
 - `OPENAI_API_KEY`가 있으면 GPT가 제작 계획을 세웁니다.
 - `OPENAI_MODEL`로 사용할 모델을 바꿀 수 있습니다. 기본값은 `gpt-5.5`입니다.
-- API 키가 없거나 GPT 요청이 실패하면 로컬 플래너로 같은 렌더링 흐름을 실행합니다.
-- Google Cloud 인증(`GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_SERVICE_ACCOUNT_JSON`, 또는 `GOOGLE_CLOUD_ACCESS_TOKEN`)이 있으면 영상 내레이션은 Google Cloud TTS Chirp 3 HD를 우선 사용합니다. 없으면 ElevenLabs, OpenAI TTS(`gpt-4o-mini-tts`), Windows 내장 음성 순서로 돌아갑니다.
+- API 키가 없거나 기획 응답이 콘텐츠 계약을 통과하지 못하면 임의 영상을 만들지 않고 `plan_exhausted` 또는 제작 보류로 종료합니다.
+- 승인된 영상 내레이션은 명시 provider인 OpenAI TTS(`gpt-4o-mini-tts`, `marin`)를 사용합니다. 제작 중 다른 provider나 시스템 음성으로 조용히 대체하지 않습니다.
 - 음성 설정은 `PR_STUDIO_TTS_PROVIDER`, `PR_STUDIO_TTS_PROVIDER_KO`, `PR_STUDIO_TTS_PROVIDER_EN`, `GOOGLE_TTS_VOICE_KO`, `GOOGLE_TTS_VOICE_EN`, `GOOGLE_TTS_SPEAKING_RATE`, `GOOGLE_TTS_INPUT_MODE`, `PR_STUDIO_TTS_MODEL`, `PR_STUDIO_TTS_VOICE_KO`, `PR_STUDIO_TTS_VOICE_EN`, `PR_STUDIO_TTS_INSTRUCTIONS`, `ELEVENLABS_VOICE_ID_KO`, `ELEVENLABS_VOICE_ID_EN`으로 조정할 수 있습니다.
-- 완성 파일은 `out/pr-studio-final.mp4`에 저장되고 앱 안에서 바로 재생하거나 다운로드할 수 있습니다.
+- 완성 파일과 중간 산출물은 `video-assets/jobs/<작업 UUID>/` 아래에 격리되고 앱 안에서 재생하거나 인증된 경로로 다운로드합니다.
 
 ## Railway + Supabase 배포형 영상 생성
 
 Railway처럼 웹 요청 안에서 긴 렌더링을 실행하기 부담스러운 환경에서는 영상 생성을 queue/worker 방식으로 실행합니다.
 
-- 먼저 `supabase/migrations/202607220001_video_agent_queue.sql`을 Supabase에 적용합니다.
+- `supabase/migrations/202607220001_video_agent_queue.sql`, `202610250001_video_agent_v2.sql`, `202610250002_video_agent_sources.sql`을 순서대로 적용합니다.
 - 웹/worker 공통 환경변수: `VIDEO_AGENT_EXECUTION=queue`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
-- 선택 환경변수: `VIDEO_AGENT_STORAGE_BUCKET=video-agent-results`, `VIDEO_AGENT_WORKER_POLL_MS=5000`
+- OpenAI 환경변수: `OPENAI_API_KEY`, 선택적으로 `OPENAI_MODEL`, `PR_STUDIO_TTS_MODEL`, `PR_STUDIO_TRANSCRIPTION_MODEL`
+- 선택 환경변수: `VIDEO_AGENT_STORAGE_BUCKET=video-agent-results`, `VIDEO_AGENT_SOURCE_BUCKET=video-agent-sources`, `VIDEO_AGENT_WORKER_POLL_MS=5000`
+- 웹 서비스는 `Dockerfile`, worker 서비스는 `Dockerfile.worker`를 사용합니다.
 - worker 서비스 시작 명령: `npm run worker:video`
-- 컨테이너에는 `Dockerfile`을 통해 `chromium`, `ffmpeg`, `fonts-noto-cjk`가 설치됩니다.
+- worker에는 웹 전용 `/api/health` 검사를 적용하지 않습니다. worker 상태는 프로세스 생존, 로그와 queue heartbeat로 확인합니다.
+- 컨테이너에는 `Dockerfile`을 통해 Chromium, FFmpeg, Noto CJK와 한국어 Tesseract가 설치됩니다.
+- 웹 health check: `/api/health`
 
-이 구조에서는 작업 상태와 재시도 정보가 Supabase Postgres에, 완성 MP4가 비공개 Supabase Storage 버킷에 저장됩니다. 여러 worker는 `FOR UPDATE SKIP LOCKED` 기반 RPC로 작업을 원자적으로 선점하며, 중단된 작업은 20분 뒤 다시 선점할 수 있습니다. secret key는 브라우저에 노출하지 말고 웹/worker 서버 환경변수에만 설정합니다.
+작업 상태와 최대 3회의 기획·수집 보고는 Supabase Postgres에 저장합니다. 기존 MP4와 완성 MP4는 각각 비공개 Storage 버킷에 저장합니다. 여러 worker는 `FOR UPDATE SKIP LOCKED` 기반 RPC로 작업을 원자적으로 선점하며 heartbeat와 lease 소유권을 확인합니다. secret key와 OpenAI API key는 브라우저에 노출하지 말고 웹/worker 런타임 환경변수에만 설정합니다.
 
 ## 실행
 

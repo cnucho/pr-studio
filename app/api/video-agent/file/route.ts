@@ -6,16 +6,21 @@ import { videoAccessStatus, videoOperator } from "@/lib/video-access";
 
 export const runtime = "nodejs";
 
-const videoPath = path.join(process.cwd(), "out", "pr-studio-final.mp4");
-
 export async function GET(request: NextRequest) {
   try {
     const user = await videoOperator(request);
     const jobId = request.nextUrl.searchParams.get("jobId");
+    const runId = request.nextUrl.searchParams.get("runId");
+    if (runId && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(runId)) {
+      throw new Error("Invalid video run ID.");
+    }
     const queued = jobId ? await downloadQueuedVideo(jobId, user.id) : null;
+    const inlineVideoPath = runId
+      ? path.join(process.cwd(), "video-assets", "jobs", `inline-${runId}`, "output", "pr-studio-final.mp4")
+      : path.join(process.cwd(), "out", "pr-studio-final.mp4");
     const [file, metadata] = queued
       ? [queued.bytes, { size: queued.size, mtimeMs: Date.parse(queued.generatedAt) }]
-      : await Promise.all([readFile(videoPath), stat(videoPath)]);
+      : await Promise.all([readFile(inlineVideoPath), stat(inlineVideoPath)]);
 
     return new Response(new Uint8Array(file), {
       headers: {

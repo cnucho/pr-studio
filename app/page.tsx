@@ -88,6 +88,7 @@ type VideoAgentRunStep = {
 };
 
 type VideoAgentOutput = {
+  outcome?: "produced" | "plan_exhausted";
   plan: {
     mode: "gpt" | "local";
     model: string;
@@ -109,7 +110,7 @@ type VideoAgentOutput = {
     };
   };
   runSteps: VideoAgentRunStep[];
-  video: {
+  video?: {
     path: string;
     downloadUrl: string;
     width: number;
@@ -645,6 +646,7 @@ export default function Home() {
             <AnimatePresence mode="wait">
               <motion.section
                 key={activeTab}
+                data-active-tool={activeTab}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
@@ -1456,6 +1458,11 @@ function AgentStudio() {
   }
 
   async function finishVideo(result: VideoAgentOutput, token: string) {
+    if (!result.video || result.outcome === "plan_exhausted") {
+      setVideoUrl("");
+      setOutput(result);
+      return;
+    }
     const response = await fetch(result.video.downloadUrl, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     if (!response.ok) throw new Error("생성된 영상 파일을 가져오지 못했습니다.");
     setVideoUrl(URL.createObjectURL(await response.blob()));
@@ -1496,6 +1503,7 @@ function AgentStudio() {
 
   const previewUrl = videoUrl;
   const generatedAt = output
+    && output.video
     ? new Date(output.video.generatedAt).toLocaleString("ko-KR", { hour12: false })
     : "";
 
@@ -1614,28 +1622,38 @@ function AgentStudio() {
                       </p>
                     )}
                   </div>
-                  <a
-                    href={previewUrl}
-                    download="pr-studio-final.mp4"
-                    className="focus-ring flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-ink/90"
-                  >
-                    <Download className="h-4 w-4" />
-                    MP4
-                  </a>
+                  {output.video && (
+                    <a
+                      href={previewUrl}
+                      download="pr-studio-final.mp4"
+                      className="focus-ring flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-ink/90"
+                    >
+                      <Download className="h-4 w-4" />
+                      MP4
+                    </a>
+                  )}
                 </div>
 
-                <video
-                  controls
-                  src={previewUrl}
-                  className="aspect-video w-full rounded-lg border border-line bg-ink"
-                />
+                {output.video ? (
+                  <>
+                    <video
+                      controls
+                      src={previewUrl}
+                      className="aspect-video w-full rounded-lg border border-line bg-ink"
+                    />
 
-                <div className="grid gap-3 md:grid-cols-4">
-                  <Metric label="해상도" value={`${output.video.width}×${output.video.height}`} tone="cobalt" />
-                  <Metric label="길이" value={formatVideoDuration(output.video.duration)} tone="mint" />
-                  <Metric label="크기" value={formatFileSize(output.video.size)} tone="coral" />
-                  <Metric label="상태" value="완료" tone="ink" />
-                </div>
+                    <div className="grid gap-3 md:grid-cols-4">
+                      <Metric label="해상도" value={`${output.video.width}×${output.video.height}`} tone="cobalt" />
+                      <Metric label="길이" value={formatVideoDuration(output.video.duration)} tone="mint" />
+                      <Metric label="크기" value={formatFileSize(output.video.size)} tone="coral" />
+                      <Metric label="상태" value="완료" tone="ink" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-amber/30 bg-amber/10 px-4 py-5 text-sm font-semibold leading-relaxed text-ink/72">
+                    세 차례 기획 안에 콘텐츠 제작 조건을 충족하지 못해 영상을 만들지 않았습니다. 아래 기획과 보완 항목을 확인해 주세요.
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex min-h-[430px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-canvas px-6 text-center">

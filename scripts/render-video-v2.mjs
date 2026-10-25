@@ -9,15 +9,17 @@ import { chromeLaunchArgs, resolveBinary, resolveChrome, subtitleFont } from "./
 const require = createRequire(import.meta.url);
 const playwright = require("playwright");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const assetDir = path.join(root, "video-assets", "v2");
-const outDir = path.join(root, "out");
-const draftPath = path.join(outDir, "pr-studio-draft.mp4");
-const finalPath = path.join(outDir, "pr-studio-final.mp4");
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
   return index >= 0 && process.argv[index + 1] ? path.resolve(process.argv[index + 1]) : fallback;
 }
+
+const workDir = argument("--work-dir", path.join(root, "video-assets", "v2"));
+const assetDir = workDir;
+const finalPath = argument("--output", path.join(root, "out", "pr-studio-final.mp4"));
+const outDir = path.dirname(finalPath);
+const draftPath = path.join(workDir, "draft.mp4");
 
 function run(command, args, env = process.env) {
   const result = spawnSync(command, args, { stdio: "inherit", shell: false, env });
@@ -130,7 +132,15 @@ function assTime(seconds) {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
 }
 
-const manifest = JSON.parse(await readFile(argument("--manifest", path.join(assetDir, "manifest.json")), "utf8"));
+function escapeAss(value) {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll("{", "\\{")
+    .replaceAll("}", "\\}")
+    .replace(/\r?\n/gu, "\\N");
+}
+
+const manifest = JSON.parse(await readFile(argument("--manifest", path.join(workDir, "manifest.json")), "utf8"));
 const logPath = path.join(assetDir, "capture-log.json");
 const marks = existsSync(logPath) ? JSON.parse(await readFile(logPath, "utf8")).marks : [];
 for (const beat of manifest.beats) beat.mark = marks.find((mark) => mark.beatId === beat.id);
@@ -141,6 +151,7 @@ await mkdir(outDir, { recursive: true });
 await renderCards(manifest.beats);
 
 const events = [];
+const timeline = [];
 let cursor = 0;
 const concat = [];
 for (const beat of manifest.beats) {
@@ -150,20 +161,38 @@ for (const beat of manifest.beats) {
   const preset = manifest.preset ?? {};
   const voiceEnv = {
     ...process.env,
+    PR_STUDIO_TTS_PROVIDER_KO: preset.voice?.provider ?? process.env.PR_STUDIO_TTS_PROVIDER_KO,
+    PR_STUDIO_TTS_VOICE_KO: preset.voice?.voice ?? process.env.PR_STUDIO_TTS_VOICE_KO,
     GOOGLE_TTS_VOICE_KO: preset.voice?.voice ?? process.env.GOOGLE_TTS_VOICE_KO,
     GOOGLE_TTS_SPEAKING_RATE: String(preset.voice?.speakingRate ?? process.env.GOOGLE_TTS_SPEAKING_RATE ?? 0.94),
   };
   run(process.execPath, [path.join(root, "scripts", "synthesize-speech.mjs"), "--input", textPath, "--output", wavPath], voiceEnv);
-  const duration = Math.max(durationOf(wavPath) + beat.postPauseMs / 1000, beat.minHoldMs / 1000);
+  const audioDurationSec = durationOf(wavPath);
+  const duration = Math.max(audioDurationSec + beat.postPauseMs / 1000, (beat.minScreenTimeMs ?? beat.minHoldMs) / 1000);
   const image = beat.medium === "insert"
     ? path.join(assetDir, "cards", `${beat.id}.png`)
     : beat.mark?.screenshot ?? path.join(assetDir, "screens", `${beat.id}.png`);
   const clip = path.join(assetDir, "clips", `${beat.id}.mp4`);
   makeClip(beat, image, wavPath, duration, clip);
   concat.push(`file '${clip.replaceAll("\\", "/").replaceAll("'", "'\\''")}'`);
-  events.push(`Dialogue: 0,${assTime(cursor + 0.25)},${assTime(cursor + duration - 0.15)},Caption,,0,0,0,,${beat.subtitle.replaceAll("{", "\\{").replaceAll("}", "\\}")}`);
+  events.push(`Dialogue: 0,${assTime(cursor + 0.25)},${assTime(cursor + duration - 0.15)},Caption,,0,0,0,,${escapeAss(beat.subtitle)}`);
+  timeline.push({
+    beatId: beat.id,
+    screenId: beat.screenId,
+    startSec: cursor,
+    endSec: cursor + duration,
+    durationSec: duration,
+    audioDurationSec,
+    purpose: beat.purpose,
+    viewerTakeaway: beat.viewerTakeaway,
+    evidence: beat.evidence,
+    narration: beat.narration,
+    subtitle: beat.subtitle,
+  });
   cursor += duration;
 }
+
+await writeFile(path.join(workDir, "timeline.json"), JSON.stringify({ version: "2.0", durationSec: cursor, beats: timeline }, null, 2), "utf8");
 
 const concatPath = path.join(assetDir, "concat.txt");
 const subtitlePath = path.join(assetDir, "subtitles.ass");
