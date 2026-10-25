@@ -3,6 +3,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromeLaunchArgs, resolveChrome } from "./video-runtime.mjs";
+import {
+  CAPTURE_VIEWPORT,
+  OBSERVATION_HOLD_MS,
+  boxInside,
+} from "./video-frame-contract.mjs";
 
 const require = createRequire(import.meta.url);
 const playwright = require("playwright");
@@ -82,19 +87,55 @@ async function perform(page, beat, fixtures) {
   }
 }
 
-async function observedText(page, beat) {
-  if (beat.screenId === "press-input") return page.getByLabel("정책명").inputValue();
-  if (beat.screenId === "news-input") return page.getByLabel("기사 입력").inputValue();
-  if (beat.screenId === "youtube-input") return page.getByLabel("정책자료 텍스트").inputValue();
-  return page.getByText(beat.observe).first().innerText();
+function observationLocator(page, beat) {
+  if (beat.screenId === "press-input") return page.locator('[data-collection-field="policy-name"]');
+  if (beat.screenId === "news-input") return page.locator('[data-collection-field="articles"]');
+  if (beat.screenId === "youtube-input") return page.locator('[data-collection-field="policy-text"]');
+  const track = beat.screenId.split("-")[0];
+  return page.locator(`[data-video-observe="${track}-result-title"]`);
+}
+
+async function stabilizeObservation(page, beat, origin) {
+  const locator = observationLocator(page, beat);
+  const count = await locator.count();
+  if (count !== 1) throw new Error(`${beat.id} 관찰 요소가 ${count}개입니다.`);
+  await locator.scrollIntoViewIfNeeded();
+  await locator.evaluate((element) => element.scrollIntoView({ block: "center", inline: "nearest" }));
+  await page.waitForTimeout(120);
+  const observationBox = await locator.boundingBox();
+  if (!boxInside(observationBox)) {
+    throw new Error(`${beat.id} 관찰 요소가 녹화 안전 영역 안에 완전히 보이지 않습니다: ${JSON.stringify(observationBox)}`);
+  }
+  const observedText = beat.screenId.endsWith("-input")
+    ? await locator.inputValue()
+    : await locator.innerText();
+  if (!observedText.includes(beat.observe)) {
+    throw new Error(`${beat.id} 화면에서 '${beat.observe}'를 확인하지 못했습니다.`);
+  }
+  const stableFromMs = Date.now() - origin;
+  await page.waitForTimeout(OBSERVATION_HOLD_MS);
+  const stableBox = await locator.boundingBox();
+  const stableText = beat.screenId.endsWith("-input")
+    ? await locator.inputValue()
+    : await locator.innerText();
+  if (!boxInside(stableBox) || !stableText.includes(beat.observe)) {
+    throw new Error(`${beat.id} 관찰 요소가 안정 구간 동안 유지되지 않았습니다.`);
+  }
+  return {
+    observedText: stableText,
+    observationBox: stableBox,
+    captureViewport: CAPTURE_VIEWPORT,
+    stableFromMs,
+    stableToMs: Date.now() - origin,
+  };
 }
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 await mkdir(screenDir, { recursive: true });
 const browser = await playwright.chromium.launch(launchOptions());
 const context = await browser.newContext({
-  viewport: { width: 1920, height: 1080 },
-  recordVideo: { dir: assetDir, size: { width: 1920, height: 1080 } },
+  viewport: CAPTURE_VIEWPORT,
+  recordVideo: { dir: assetDir, size: CAPTURE_VIEWPORT },
 });
 const page = await context.newPage();
 const origin = Date.now();
@@ -106,10 +147,7 @@ try {
   for (const beat of manifest.beats.filter((item) => item.medium !== "insert")) {
     const startedAtMs = Date.now() - origin;
     await perform(page, beat, manifest.fixtures);
-    const text = await observedText(page, beat);
-    if (!text.includes(beat.observe)) {
-      throw new Error(`${beat.id} 화면에서 '${beat.observe}'를 확인하지 못했습니다.`);
-    }
+    const observation = await stabilizeObservation(page, beat, origin);
     const screenshot = path.join(screenDir, `${beat.id}.png`);
     await page.screenshot({ path: screenshot });
     marks.push({
@@ -118,7 +156,11 @@ try {
       startedAtMs,
       endedAtMs: Date.now() - origin,
       screenshot,
-      observedText: text.slice(0, 500),
+      observedText: observation.observedText.slice(0, 500),
+      observationBox: observation.observationBox,
+      captureViewport: observation.captureViewport,
+      stableFromMs: observation.stableFromMs,
+      stableToMs: observation.stableToMs,
     });
   }
 } finally {

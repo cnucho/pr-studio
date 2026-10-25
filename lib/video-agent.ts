@@ -52,6 +52,7 @@ export type VideoAgentRunStep = {
   status: "completed" | "failed";
   durationMs: number;
   output: string;
+  exitCode?: number | null;
 };
 
 export type VideoAgentVideo = {

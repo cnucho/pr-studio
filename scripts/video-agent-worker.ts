@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
@@ -11,6 +12,7 @@ import { VIDEO_ANALYSIS_LIMITS } from "../lib/video-analysis";
 import { runPlanningLoop } from "../lib/video-orchestrator";
 import type { CollectionReport, VideoBrief } from "../lib/video-planning";
 import { resolveBinary } from "../lib/video-runtime";
+import { productionFailurePolicy } from "../lib/video-production-failure";
 
 type JobRow = {
   id: string;
@@ -44,6 +46,8 @@ const supabase = createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
+class FinalReviewError extends Error {}
+
 function now() {
   return new Date().toISOString();
 }
@@ -76,9 +80,38 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<V
         status: code === 0 ? "completed" : "failed",
         durationMs: Date.now() - startedAt,
         output: output.length > 1400 ? `...${output.slice(-1400)}` : output,
+        exitCode: code,
       });
     });
   });
+}
+
+async function reviewAuditFiles(workDir: string, finalVideoPath: string, reviewPath: string) {
+  const files = [finalVideoPath, reviewPath];
+  for (const directory of [path.join(workDir, "review-frames"), path.join(workDir, "review-crops")]) {
+    if (!existsSync(directory)) continue;
+    const names = await readdir(directory);
+    files.push(...names.map((name) => path.join(directory, name)));
+  }
+  return files.filter((file) => existsSync(file));
+}
+
+async function archiveReviewFailure(job: JobRow, workDir: string, finalVideoPath: string, reviewPath: string) {
+  const prefix = `${job.id}/audit/review-attempt-${job.attempts}`;
+  for (const file of await reviewAuditFiles(workDir, finalVideoPath, reviewPath)) {
+    const relative = file === finalVideoPath
+      ? "pr-studio-final.mp4"
+      : file === reviewPath
+        ? "review.json"
+        : path.relative(workDir, file).replaceAll("\\", "/");
+    const contentType = file.endsWith(".mp4") ? "video/mp4" : file.endsWith(".png") ? "image/png" : "application/json";
+    const { error } = await supabase.storage.from(bucket).upload(`${prefix}/${relative}`, await readFile(file), {
+      contentType,
+      upsert: true,
+    });
+    if (error) throw error;
+  }
+  return prefix;
 }
 
 async function claimJob(): Promise<JobRow | null> {
@@ -248,9 +281,26 @@ async function produceVideo(job: JobRow, plan: VideoAgentPlan) {
       phase: title === "프레임 검토" || title === "영상 검증" ? "reviewing" : "producing",
       updated_at: now(),
     });
-    const step = { ...await run(command, [...args], env), title };
+    let step: VideoAgentRunStep = { ...await run(command, [...args], env), title };
     runSteps.push(step);
-    if (step.status === "failed") throw new Error(step.output || step.command);
+    if (step.status === "failed" && productionFailurePolicy(title, step.exitCode) === "retry-review") {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      step = { ...await run(command, [...args], env), title: `${title} 재시도` };
+      runSteps.push(step);
+    }
+    if (step.status === "failed") {
+      if (title === "프레임 검토") {
+        try {
+          const auditPrefix = await archiveReviewFailure(job, workDir, finalVideoPath, reviewPath);
+          throw new FinalReviewError(`${step.output || step.command}\n감사 산출물: ${auditPrefix}`);
+        } catch (archiveError) {
+          if (archiveError instanceof FinalReviewError) throw archiveError;
+          const archiveMessage = archiveError instanceof Error ? archiveError.message : String(archiveError);
+          throw new FinalReviewError(`${step.output || step.command}\n감사 산출물 보관 실패: ${archiveMessage}`);
+        }
+      }
+      throw new Error(step.output || step.command);
+    }
   }
 
   const metadata = JSON.parse(runSteps.at(-1)?.output ?? "{}") as {
@@ -308,7 +358,7 @@ async function processJob(job: JobRow) {
     if (plan) await produceVideo(job, plan);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const exhausted = Number(job.attempts) >= Number(job.max_attempts);
+    const exhausted = error instanceof FinalReviewError || Number(job.attempts) >= Number(job.max_attempts);
     const timestamp = now();
     await updateClaimedJob(
       job.id,

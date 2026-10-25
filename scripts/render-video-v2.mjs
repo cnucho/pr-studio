@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { chromeLaunchArgs, resolveBinary, resolveChrome, subtitleFont } from "./video-runtime.mjs";
+import { motionSourceRange, visualTransformForBeat } from "./video-frame-contract.mjs";
 
 const require = createRequire(import.meta.url);
 const playwright = require("playwright");
@@ -89,23 +90,23 @@ async function renderCards(beats) {
 }
 
 function visualFilter(beat) {
-  const base = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xf7f6f2,format=yuv420p";
-  if (beat.medium === "still" && beat.screenId.endsWith("-output")) {
+  const transform = visualTransformForBeat(beat);
+  if (transform.scaleX !== 1) {
     return "scale=2048:1152:force_original_aspect_ratio=increase,crop=1920:1080,format=yuv420p";
   }
-  return base;
+  return "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xf7f6f2,format=yuv420p";
 }
 
-function makeClip(beat, image, audio, duration, dest) {
+function makeClip(beat, image, audio, duration, dest, sourceRange) {
   const ffmpeg = resolveBinary("ffmpeg");
   const mark = beat.mark;
   const webm = path.join(assetDir, "capture.webm");
-  if (beat.medium === "motion" && mark && existsSync(webm)) {
-    const start = Math.max(0, mark.startedAtMs / 1000 - 0.2).toFixed(3);
+  if (beat.medium === "motion" && mark && sourceRange && existsSync(webm)) {
+    const start = (sourceRange.startMs / 1000).toFixed(3);
     run(ffmpeg, [
       "-y", "-ss", start, "-i", webm, "-i", audio,
       "-filter_complex",
-      `[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xf7f6f2,tpad=stop_mode=clone:stop_duration=30,fps=30,format=yuv420p[v];[1:a]apad=pad_dur=30[a]`,
+      `[0:v]trim=duration=${sourceRange.durationSec.toFixed(3)},setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xf7f6f2,tpad=stop_mode=clone:stop_duration=30,fps=30,format=yuv420p[v];[1:a]apad=pad_dur=30[a]`,
       "-map", "[v]", "-map", "[a]", "-t", duration.toFixed(3),
       "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-b:a", "160k",
       "-movflags", "+faststart", dest,
@@ -154,7 +155,7 @@ const events = [];
 const timeline = [];
 let cursor = 0;
 const concat = [];
-for (const beat of manifest.beats) {
+for (const [beatIndex, beat] of manifest.beats.entries()) {
   const textPath = path.join(assetDir, "audio", `${beat.id}.txt`);
   const wavPath = path.join(assetDir, "audio", `${beat.id}.wav`);
   await writeFile(textPath, beat.narration, "utf8");
@@ -173,7 +174,13 @@ for (const beat of manifest.beats) {
     ? path.join(assetDir, "cards", `${beat.id}.png`)
     : beat.mark?.screenshot ?? path.join(assetDir, "screens", `${beat.id}.png`);
   const clip = path.join(assetDir, "clips", `${beat.id}.mp4`);
-  makeClip(beat, image, wavPath, duration, clip);
+  const markIndex = marks.findIndex((mark) => mark.beatId === beat.id);
+  const nextStartedAtMs = markIndex >= 0 ? marks[markIndex + 1]?.startedAtMs : undefined;
+  const sourceRange = beat.medium === "motion" ? motionSourceRange(beat.mark, nextStartedAtMs) : null;
+  if (beat.medium === "motion" && beat.mark && !sourceRange) {
+    throw new Error(`Invalid motion source interval for ${beat.id} at beat ${beatIndex}`);
+  }
+  makeClip(beat, image, wavPath, duration, clip, sourceRange);
   concat.push(`file '${clip.replaceAll("\\", "/").replaceAll("'", "'\\''")}'`);
   events.push(`Dialogue: 0,${assTime(cursor + 0.25)},${assTime(cursor + duration - 0.15)},Caption,,0,0,0,,${escapeAss(beat.subtitle)}`);
   timeline.push({
@@ -188,6 +195,16 @@ for (const beat of manifest.beats) {
     evidence: beat.evidence,
     narration: beat.narration,
     subtitle: beat.subtitle,
+    verification: beat.medium === "insert" || !beat.mark?.observationBox ? null : {
+      observationBox: beat.mark.observationBox,
+      captureViewport: beat.mark.captureViewport,
+      stableStartSec: beat.medium === "motion" && sourceRange
+        ? Math.max(0, (Number(beat.mark.stableFromMs ?? beat.mark.endedAtMs) - sourceRange.startMs) / 1000)
+        : 0,
+      stableEndSec: duration,
+      sourceStartMs: sourceRange?.startMs ?? null,
+      sourceEndMs: sourceRange?.endMs ?? null,
+    },
   });
   cursor += duration;
 }

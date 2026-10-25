@@ -2554,7 +2554,7 @@ function PressReleaseResult({ output }: { output: PressOutput }) {
       </article>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-line p-4">
-          <div className="flex items-center gap-2 text-sm font-bold">
+          <div className="flex items-center gap-2 text-sm font-bold" data-video-observe="press-result-title">
             <Share2 className="h-4 w-4 text-coral" />
             SNS 요약
           </div>
@@ -2655,7 +2655,7 @@ function NewsAnalysisResult({ output }: { output: NewsAnalysisOutput }) {
         </div>
       </div>
       <div className="rounded-lg border border-line bg-ink p-4 text-white">
-        <div className="flex items-center gap-2 text-sm font-bold">
+        <div className="flex items-center gap-2 text-sm font-bold" data-video-observe="news-result-title">
           <MessageSquareText className="h-4 w-4" />
           자동 보고서
         </div>
@@ -2853,7 +2853,7 @@ function YoutubeResult({ output }: { output: YoutubeOutput }) {
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-lg border border-line p-4">
-          <div className="flex items-center gap-2 text-sm font-bold">
+          <div className="flex items-center gap-2 text-sm font-bold" data-video-observe="youtube-result-title">
             <Youtube className="h-4 w-4 text-coral" />
             YouTube 게시 패키지
           </div>

@@ -1,9 +1,18 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { resolveBinary, tesseractAvailable } from "./video-runtime.mjs";
+import {
+  CAPTURE_VIEWPORT,
+  cropObservationBox,
+  finalReviewExitCode,
+  mapObservationBox,
+  observationMatches,
+  verificationSampleOffsets,
+} from "./video-frame-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const forbidden = /(?:AI|인공지능|GPT|모델)(?:이|가|은|는)?\s*(?:직접\s*)?(?:작성|생성|분석|만들)/u;
@@ -47,7 +56,7 @@ function normalizedText(value) {
   return String(value ?? "").normalize("NFC").replace(/\s+/gu, "").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
-function buildReviewRecord(manifest, marks, timeline, probeResult, ocr, extractedFrames) {
+function buildReviewRecord(manifest, marks, timeline, probeResult, ocrEvidence, extractedFrames, ocrStatus, videoSha256, frameExtractionErrors) {
   const missingBeatIds = manifest.beats
     .filter((beat) => beat.medium !== "insert")
     .filter((beat) => {
@@ -73,12 +82,12 @@ function buildReviewRecord(manifest, marks, timeline, probeResult, ocr, extracte
     })
     .map((beat) => beat.id);
   const frameMissingBeatIds = manifest.beats
-    .filter((beat) => !extractedFrames[beat.id] || !existsSync(extractedFrames[beat.id]))
+    .filter((beat) => !(extractedFrames[beat.id] ?? []).some((frame) => existsSync(frame)))
     .map((beat) => beat.id);
-  const ocrMissingBeatIds = probeResult.ocrAvailable
+  const ocrMissingBeatIds = ocrStatus === "checked"
     ? manifest.beats
         .filter((beat) => beat.medium !== "insert")
-        .filter((beat) => !normalizedText(ocr[beat.id]).includes(normalizedText(beat.observe)))
+        .filter((beat) => !ocrEvidence[beat.id]?.passed)
         .map((beat) => beat.id)
     : [];
   const geometryOk = probeResult.hasAudio && probeResult.width === 1920 && probeResult.height === 1080;
@@ -89,6 +98,8 @@ function buildReviewRecord(manifest, marks, timeline, probeResult, ocr, extracte
     probeResult.durationSec <= Number(manifest.timing?.maxSec ?? Number.POSITIVE_INFINITY);
   const technicalReady = geometryOk && durationOk && timelineDurationOk && frameMissingBeatIds.length === 0;
   const contentReady =
+    ocrStatus !== "error" &&
+    frameExtractionErrors.length === 0 &&
     missingBeatIds.length === 0 &&
     forbiddenBeatIds.length === 0 &&
     timelineLengthOk &&
@@ -104,16 +115,19 @@ function buildReviewRecord(manifest, marks, timeline, probeResult, ocr, extracte
     forbiddenBeatIds,
     timelineIssueBeatIds,
     frameMissingBeatIds,
-    ocrStatus: probeResult.ocrAvailable ? "checked" : "skipped",
+    frameExtractionErrors,
+    ocrStatus,
     ocrMissingBeatIds,
+    videoSha256,
     timelineLengthOk,
     timelineDurationOk,
     frames: (timeline.beats ?? []).map((item) => ({
       beatId: item.beatId,
-      atMs: Math.round(((item.startSec + item.endSec) / 2) * 1000),
-      screenshot: extractedFrames[item.beatId],
+      atMs: Math.round((ocrEvidence[item.beatId]?.samples?.[0]?.atSec ?? ((item.startSec + item.endSec) / 2)) * 1000),
+      screenshot: extractedFrames[item.beatId]?.[0] ?? "",
       observedText: marks.find((mark) => mark.beatId === item.beatId)?.observedText ?? "",
-      ocrText: ocr[item.beatId] ?? "",
+      ocrSamples: ocrEvidence[item.beatId]?.samples ?? [],
+      ocrPassed: ocrEvidence[item.beatId]?.passed ?? null,
     })),
     timeline,
     probe: probeResult,
@@ -125,10 +139,13 @@ const videoPath = argument("--video", path.join(root, "out", "pr-studio-final.mp
 const reviewPath = argument("--review", path.join(assetDir, "review.json"));
 const log = JSON.parse(await readFile(path.join(assetDir, "capture-log.json"), "utf8"));
 const frameDir = path.join(assetDir, "review-frames");
+const cropDir = path.join(assetDir, "review-crops");
 await mkdir(frameDir, { recursive: true });
+await mkdir(cropDir, { recursive: true });
 const ffmpeg = resolveBinary("ffmpeg");
-const ocr = {};
+const ocrEvidence = {};
 const extractedFrames = {};
+const frameExtractionErrors = [];
 const timelinePath = path.join(assetDir, "timeline.json");
 let timeline;
 
@@ -163,18 +180,106 @@ if (existsSync(timelinePath)) {
   await writeFile(timelinePath, JSON.stringify(timeline, null, 2), "utf8");
 }
 
+function ocrRuntime() {
+  if (!tesseractAvailable()) return { ready: false, error: "tesseract 명령이 없습니다." };
+  const languages = runText("tesseract", ["--list-langs"]);
+  if (languages.status !== 0) return { ready: false, error: languages.stderr || "OCR 언어 목록을 읽지 못했습니다." };
+  const available = new Set(languages.stdout.split(/\r?\n/u).map((value) => value.trim()));
+  if (!available.has("kor") || !available.has("eng")) {
+    return { ready: false, error: "Tesseract kor+eng 언어 데이터가 없습니다." };
+  }
+  return { ready: true, error: "" };
+}
+
+const allowOcrSkip = process.argv.includes("--allow-ocr-skip");
+const runtime = ocrRuntime();
+let ocrStatus = runtime.ready ? "checked" : allowOcrSkip ? "skipped" : "error";
+let ocrInfrastructureError = runtime.error;
+
 for (const item of timeline.beats ?? []) {
-  const at = Math.max(0, (Number(item.startSec) + Number(item.endSec)) / 2);
-  const frame = path.join(frameDir, `${item.beatId}.png`);
-  const extracted = runText(ffmpeg, ["-y", "-ss", at.toFixed(3), "-i", videoPath, "-frames:v", "1", frame]);
-  if (extracted.status === 0 && existsSync(frame)) extractedFrames[item.beatId] = frame;
-  if (tesseractAvailable() && existsSync(frame)) {
-    const result = runText("tesseract", [frame, "stdout", "-l", "kor+eng", "--psm", "6"]);
-    ocr[item.beatId] = result.status === 0 ? result.stdout.trim() : "";
+  const beat = manifest.beats.find((candidate) => candidate.id === item.beatId);
+  if (!beat) continue;
+  const offsets = beat.medium === "insert"
+    ? [Math.max(0.05, Number(item.durationSec) / 2)]
+    : verificationSampleOffsets(item, beat);
+  const frames = [];
+  const samples = [];
+  const mark = (log.marks ?? []).find((candidate) => candidate.beatId === beat.id);
+  for (const [index, offset] of offsets.entries()) {
+    const at = Math.max(0, Number(item.startSec) + offset);
+    const frame = path.join(frameDir, `${item.beatId}-${index}.png`);
+    const extracted = runText(ffmpeg, ["-y", "-ss", at.toFixed(3), "-i", videoPath, "-frames:v", "1", frame]);
+    if (extracted.status !== 0 || !existsSync(frame)) {
+      frameExtractionErrors.push({
+        beatId: item.beatId,
+        sampleIndex: index,
+        atSec: at,
+        status: extracted.status,
+        error: (extracted.stderr || "FFmpeg frame extraction produced no frame").slice(-2000),
+      });
+      continue;
+    }
+    frames.push(frame);
+    if (beat.medium === "insert" || ocrStatus !== "checked") {
+      samples.push({ atSec: at, frame, crop: "", box: null, text: "", matched: null, error: ocrStatus === "skipped" ? "개발 모드 OCR 생략" : "" });
+      continue;
+    }
+    const sourceBox = item.verification?.observationBox ?? mark?.observationBox;
+    const viewport = item.verification?.captureViewport ?? mark?.captureViewport;
+    const mapped = sourceBox && viewport?.width === CAPTURE_VIEWPORT.width && viewport?.height === CAPTURE_VIEWPORT.height
+      ? mapObservationBox(sourceBox, beat)
+      : null;
+    const cropBox = mapped ? cropObservationBox(mapped) : null;
+    if (!cropBox) {
+      samples.push({ atSec: at, frame, crop: "", box: mapped, text: "", matched: false, error: "관찰 영역이 최종 프레임 밖입니다." });
+      continue;
+    }
+    const crop = path.join(cropDir, `${item.beatId}-${index}.png`);
+    const cropped = runText(ffmpeg, [
+      "-y", "-i", frame,
+      "-vf", `crop=${cropBox.width}:${cropBox.height}:${cropBox.x}:${cropBox.y},scale=iw*3:ih*3:flags=lanczos`,
+      "-frames:v", "1", crop,
+    ]);
+    if (cropped.status !== 0 || !existsSync(crop)) {
+      samples.push({ atSec: at, frame, crop, box: cropBox, text: "", matched: false, error: cropped.stderr || "관찰 영역 crop 실패" });
+      ocrStatus = "error";
+      ocrInfrastructureError = cropped.stderr || "관찰 영역 crop 실패";
+      continue;
+    }
+    const result = runText("tesseract", [crop, "stdout", "-l", "kor+eng", "--psm", "6"]);
+    const text = result.status === 0 ? result.stdout.trim() : "";
+    const matched = result.status === 0 && normalizedText(text).includes(normalizedText(beat.observe));
+    samples.push({ atSec: at, frame, crop, box: cropBox, text, matched, error: result.status === 0 ? "" : result.stderr });
+    if (result.status !== 0) {
+      ocrStatus = "error";
+      ocrInfrastructureError = result.stderr || `Tesseract 실행 실패: ${beat.id}`;
+    }
+    if (observationMatches(samples.map((sample) => sample.matched), beat)) break;
+  }
+  extractedFrames[item.beatId] = frames;
+  if (beat.medium !== "insert") {
+    ocrEvidence[item.beatId] = {
+      passed: ocrStatus === "checked" && observationMatches(samples.map((sample) => sample.matched), beat),
+      samples,
+    };
   }
 }
 
-const review = buildReviewRecord(manifest, log.marks ?? [], timeline, probe(videoPath), ocr, extractedFrames);
+const probeResult = probe(videoPath);
+probeResult.ocrAvailable = runtime.ready;
+const videoSha256 = createHash("sha256").update(await readFile(videoPath)).digest("hex");
+const review = buildReviewRecord(
+  manifest,
+  log.marks ?? [],
+  timeline,
+  probeResult,
+  ocrEvidence,
+  extractedFrames,
+  ocrStatus,
+  videoSha256,
+  frameExtractionErrors,
+);
+review.ocrInfrastructureError = ocrInfrastructureError;
 await writeFile(reviewPath, JSON.stringify(review, null, 2));
 console.log(JSON.stringify({
   ready: review.ready,
@@ -184,6 +289,13 @@ console.log(JSON.stringify({
   timelineIssueBeatIds: review.timelineIssueBeatIds,
   ocrStatus: review.ocrStatus,
   ocrMissingBeatIds: review.ocrMissingBeatIds,
+  frameExtractionErrors: review.frameExtractionErrors,
+  videoSha256: review.videoSha256,
+  ocrInfrastructureError: review.ocrInfrastructureError,
   probe: review.probe,
 }));
-if (!review.ready) process.exit(1);
+process.exitCode = finalReviewExitCode({
+  ready: review.ready,
+  ocrStatus: review.ocrStatus,
+  frameExtractionErrorCount: review.frameExtractionErrors.length,
+});

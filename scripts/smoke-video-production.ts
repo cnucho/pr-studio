@@ -4,7 +4,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { videoArtifactPaths } from "../lib/video-artifacts";
 import { contentManifestIssues, createManifest } from "../lib/video-beats";
-import { resolveBinary } from "../lib/video-runtime";
+import { resolveBinary, tesseractAvailable } from "../lib/video-runtime";
 
 function run(command: string, args: string[], env = process.env) {
   const result = spawnSync(command, args, {
@@ -46,7 +46,14 @@ async function main() {
   };
   run(process.execPath, ["scripts/capture-video-v2.mjs", "--manifest", artifact.manifestPath, "--work-dir", artifact.workDir], env);
   run(process.execPath, ["scripts/render-video-v2.mjs", "--manifest", artifact.manifestPath, "--work-dir", artifact.workDir, "--output", artifact.finalVideoPath], env);
-  run(process.execPath, ["scripts/review-video-v2.mjs", "--manifest", artifact.manifestPath, "--work-dir", artifact.workDir, "--video", artifact.finalVideoPath, "--review", artifact.reviewPath], env);
+  run(process.execPath, [
+    "scripts/review-video-v2.mjs",
+    "--manifest", artifact.manifestPath,
+    "--work-dir", artifact.workDir,
+    "--video", artifact.finalVideoPath,
+    "--review", artifact.reviewPath,
+    ...(tesseractAvailable() ? [] : ["--allow-ocr-skip"]),
+  ], env);
 
   const probe = JSON.parse(run(resolveBinary("ffprobe"), [
     "-v", "error", "-show_entries", "stream=codec_type,width,height:format=duration,size", "-of", "json", artifact.finalVideoPath,

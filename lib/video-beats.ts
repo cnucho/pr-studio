@@ -108,6 +108,10 @@ export type CaptureMark = {
   endedAtMs: number;
   screenshot: string;
   observedText: string;
+  observationBox?: { x: number; y: number; width: number; height: number };
+  captureViewport?: { width: number; height: number };
+  stableFromMs?: number;
+  stableToMs?: number;
 };
 
 export type ReviewProbe = {
