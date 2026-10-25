@@ -79,6 +79,30 @@ type VideoAgentPlanStep = {
   tool: "plan" | "capture" | "render" | "verify";
 };
 
+type VideoContentCriterion = {
+  status: "pass" | "revise";
+  rationale: string;
+};
+
+type VideoContentReview = {
+  objectiveFit: VideoContentCriterion;
+  audienceFit: VideoContentCriterion;
+  narrativeLogic: VideoContentCriterion;
+  evidenceFit: VideoContentCriterion;
+  narrationNaturalness: VideoContentCriterion;
+  subtitleFit: VideoContentCriterion;
+  visualFit: VideoContentCriterion;
+  readyToProduce: boolean;
+  blockingIssues: string[];
+};
+
+type VideoCollectionReport = {
+  order: string;
+  capabilityId: string;
+  status: "있음" | "없음";
+  detail: string;
+};
+
 type VideoAgentRunStep = {
   title: string;
   command: string;
@@ -92,10 +116,14 @@ type VideoAgentOutput = {
   plan: {
     mode: "gpt" | "local";
     model: string;
+    round?: 1 | 2 | 3;
     summary: string;
     viewerPromise: string;
     steps: VideoAgentPlanStep[];
     qualityChecks: string[];
+    collectionReports?: VideoCollectionReport[];
+    contentReview?: VideoContentReview;
+    decision?: "collect" | "produce";
     note?: string;
     manifest?: {
       track: string;
@@ -124,6 +152,17 @@ type VideoAgentOutput = {
 type VideoAgentJob = {
   id: string;
   status: "queued" | "running" | "completed" | "failed";
+  phase: "queued" | "planning" | "collecting" | "producing" | "reviewing" | "completed";
+  outcome?: "produced" | "plan_exhausted";
+  planningRound: number;
+  finalDecision?: "collect" | "produce";
+  planningRounds: {
+    round: 1 | 2 | 3;
+    plan: VideoAgentOutput["plan"];
+    collectionReports: VideoCollectionReport[];
+    createdAt: string;
+    updatedAt: string;
+  }[];
   error?: string;
   output?: VideoAgentOutput;
 };
@@ -200,12 +239,35 @@ const studioStats = [
   { label: "Format", value: "16:9" },
 ];
 
-const agentProgress = [
-  "Beat 확정",
-  "동작 녹화",
-  "음성·카드 합성",
-  "프레임 검토",
+const agentProgress = ["콘텐츠 기획", "자료 수집", "화면·음성 제작", "콘텐츠·기술 검수"];
+
+const videoPhaseLabels: Record<VideoAgentJob["phase"], string> = {
+  queued: "제작 대기",
+  planning: "콘텐츠 기획",
+  collecting: "자료 수집",
+  producing: "화면·음성 제작",
+  reviewing: "콘텐츠·기술 검수",
+  completed: "완료",
+};
+
+const contentReviewLabels: { key: keyof Pick<VideoContentReview, "objectiveFit" | "audienceFit" | "narrativeLogic" | "evidenceFit" | "narrationNaturalness" | "subtitleFit" | "visualFit">; label: string }[] = [
+  { key: "objectiveFit", label: "목적" },
+  { key: "audienceFit", label: "대상" },
+  { key: "narrativeLogic", label: "내용 흐름" },
+  { key: "evidenceFit", label: "근거" },
+  { key: "narrationNaturalness", label: "음성" },
+  { key: "subtitleFit", label: "자막" },
+  { key: "visualFit", label: "영상" },
 ];
+
+function videoPhaseIndex(job: VideoAgentJob | null) {
+  if (!job) return 0;
+  if (job.phase === "collecting") return 1;
+  if (job.phase === "producing") return 2;
+  if (job.phase === "reviewing") return 3;
+  if (job.phase === "completed") return agentProgress.length;
+  return 0;
+}
 
 function fallbackPlanStepsForUi(): VideoAgentPlanStep[] {
   return [
@@ -1337,7 +1399,12 @@ function MicroTargetingTool() {
 }
 
 function AgentStudio() {
-  const [brief, setBrief] = useState(defaultAgentBrief);
+  const [purpose, setPurpose] = useState(defaultAgentBrief);
+  const [targetAudience, setTargetAudience] = useState("홍보 콘텐츠를 기획·검수하는 실무자");
+  const [track, setTrack] = useState<"press" | "news" | "youtube">("youtube");
+  const [targetDurationSec, setTargetDurationSec] = useState("60");
+  const [outline, setOutline] = useState("");
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [email, setEmail] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [loginSent, setLoginSent] = useState(false);
@@ -1346,9 +1413,10 @@ function AgentStudio() {
   const [authBusy, setAuthBusy] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
   const [output, setOutput] = useState<VideoAgentOutput | null>(null);
+  const [job, setJob] = useState<VideoAgentJob | null>(null);
+  const [savedJobId, setSavedJobId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -1364,6 +1432,10 @@ function AgentStudio() {
     } catch (error) {
       setError(error instanceof Error ? error.message : "로그인 설정을 확인할 수 없습니다.");
     }
+  }, []);
+
+  useEffect(() => {
+    setSavedJobId(window.localStorage.getItem("pr-studio.video-agent.job-id") ?? "");
   }, []);
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
@@ -1406,28 +1478,47 @@ function AgentStudio() {
     }
   }
 
-  useEffect(() => {
-    if (!loading) return;
-
-    setPhase(0);
-    const timer = window.setInterval(() => {
-      setPhase((current) => Math.min(current + 1, agentProgress.length - 1));
-    }, 16000);
-
-    return () => window.clearInterval(timer);
-  }, [loading]);
-
   async function runAgent() {
     setLoading(true);
     setError("");
     setOutput(null);
+    setJob(null);
+    if (videoUrl) {
+      URL.revokeObjectURL(videoUrl);
+      setVideoUrl("");
+    }
 
     try {
       const token = await videoAccessToken();
+      let sourceVideoId: string | undefined;
+      if (sourceFile) {
+        if (sourceFile.type !== "video/mp4" || sourceFile.size > 25 * 1024 * 1024) {
+          throw new Error("참고 영상은 25MB 이하의 MP4만 사용할 수 있습니다.");
+        }
+        const form = new FormData();
+        form.set("file", sourceFile);
+        const uploadResponse = await fetch("/api/video-agent/source", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: form,
+        });
+        const upload = (await uploadResponse.json()) as { ok: boolean; sourceVideoId?: string; error?: string };
+        if (!uploadResponse.ok || !upload.ok || !upload.sourceVideoId) {
+          throw new Error(upload.error ?? "참고 영상을 업로드하지 못했습니다.");
+        }
+        sourceVideoId = upload.sourceVideoId;
+      }
       const response = await fetch("/api/video-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ brief }),
+        body: JSON.stringify({
+          purpose,
+          targetAudience,
+          track,
+          targetDurationSec: Number(targetDurationSec),
+          outline: outline.trim() || undefined,
+          sourceVideoId,
+        }),
       });
       const data = (await response.json()) as ApiResponse<VideoAgentOutput>;
 
@@ -1436,22 +1527,41 @@ function AgentStudio() {
       }
 
       if (data.queued && data.job) {
-        const job = await pollVideoJob(data.job.id, token);
-        if (job.status === "failed") {
-          throw new Error(job.error ?? "영상 생성에 실패했습니다.");
+        setJob(data.job);
+        window.localStorage.setItem("pr-studio.video-agent.job-id", data.job.id);
+        setSavedJobId(data.job.id);
+        const completedJob = await pollVideoJob(data.job.id, token);
+        if (completedJob.status === "failed") {
+          throw new Error(completedJob.error ?? "영상 생성에 실패했습니다.");
         }
-        if (!job.output) {
+        if (!completedJob.output) {
           throw new Error("완료된 영상 정보를 찾지 못했습니다.");
         }
-        await finishVideo(job.output, token);
+        await finishVideo(completedJob.output, token);
       } else if (data.output) {
         await finishVideo(data.output, token);
       } else {
         throw new Error("영상 생성 결과를 받지 못했습니다.");
       }
-      setPhase(agentProgress.length - 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "영상 생성에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resumeJob() {
+    if (!savedJobId) return;
+    setLoading(true);
+    setError("");
+    try {
+      const token = await videoAccessToken();
+      const restoredJob = await pollVideoJob(savedJobId, token);
+      if (restoredJob.status === "failed") throw new Error(restoredJob.error ?? "이전 영상 작업이 실패했습니다.");
+      if (!restoredJob.output) throw new Error("이전 작업의 결과를 아직 찾지 못했습니다.");
+      await finishVideo(restoredJob.output, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "이전 작업을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -1486,10 +1596,7 @@ function AgentStudio() {
       if (!response.ok || !data.ok || !data.job) {
         throw new Error(data.error ?? "영상 생성 작업 상태를 확인하지 못했습니다.");
       }
-
-      if (data.job.status === "running") {
-        setPhase((current) => Math.max(current, 1));
-      }
+      setJob(data.job);
 
       if (data.job.status === "completed" || data.job.status === "failed") {
         return data.job;
@@ -1502,6 +1609,10 @@ function AgentStudio() {
   }
 
   const previewUrl = videoUrl;
+  const phase = videoPhaseIndex(job);
+  const currentStatus = job
+    ? `${videoPhaseLabels[job.phase]}${job.planningRound ? ` · 기획 ${job.planningRound}/3` : ""}`
+    : "Agent 대기 중";
   const generatedAt = output
     && output.video
     ? new Date(output.video.generatedAt).toLocaleString("ko-KR", { hour12: false })
@@ -1516,7 +1627,7 @@ function AgentStudio() {
         <button
           type="button"
           onClick={runAgent}
-          disabled={loading || !signedIn}
+          disabled={loading || !signedIn || !purpose.trim() || !targetAudience.trim() || !targetDurationSec}
           className="focus-ring flex h-11 items-center gap-2 rounded-md bg-cobalt px-4 text-sm font-semibold text-white transition hover:bg-cobalt/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -1543,8 +1654,45 @@ function AgentStudio() {
                 </div>
               )}
             </div>
-          ) : <p className="text-xs font-semibold text-mint">영상 제작자 로그인됨</p>}
-          <TextArea label="Agent Brief" value={brief} rows={8} onChange={setBrief} />
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-mint">영상 제작자 로그인됨</p>
+              {savedJobId && (
+                <button type="button" onClick={resumeJob} disabled={loading} className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink/70 disabled:opacity-50">
+                  이전 작업 이어보기
+                </button>
+              )}
+            </div>
+          )}
+          <TextArea label="영상 목적" value={purpose} rows={5} onChange={setPurpose} />
+
+          <label className="grid gap-2 text-sm font-semibold text-ink/76">
+            대상 시청자
+            <input value={targetAudience} onChange={(event) => setTargetAudience(event.target.value)} className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium" />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm font-semibold text-ink/76">
+              콘텐츠 유형
+              <select value={track} onChange={(event) => setTrack(event.target.value as typeof track)} className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium">
+                <option value="press">보도자료</option>
+                <option value="news">뉴스 분석</option>
+                <option value="youtube">유튜브</option>
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-semibold text-ink/76">
+              목표 길이(초)
+              <input type="number" min={15} max={600} value={targetDurationSec} onChange={(event) => setTargetDurationSec(event.target.value)} className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium" />
+            </label>
+          </div>
+
+          <TextArea label="필수 구성·근거(선택)" value={outline} rows={4} onChange={setOutline} />
+
+          <label className="grid gap-2 rounded-lg border border-dashed border-line bg-canvas p-3 text-sm font-semibold text-ink/76">
+            참고할 기존 영상(선택 · MP4 · 최대 25MB)
+            <input type="file" accept="video/mp4,.mp4" disabled={!signedIn || loading} onChange={(event) => setSourceFile(event.target.files?.[0] ?? null)} className="block w-full text-xs font-medium text-ink/60 file:mr-3 file:rounded-md file:border-0 file:bg-cobalt file:px-3 file:py-2 file:font-semibold file:text-white" />
+            {sourceFile && <span className="text-xs font-medium text-ink/54">{sourceFile.name} · {formatFileSize(sourceFile.size)}</span>}
+          </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {[
@@ -1567,8 +1715,8 @@ function AgentStudio() {
             </div>
             <div className="mt-3 grid gap-2">
               {agentProgress.map((item, index) => {
-                const complete = output || (loading && index < phase);
-                const active = loading && index === phase;
+                const complete = Boolean(output) || phase > index;
+                const active = loading && phase === index;
 
                 return (
                   <div
@@ -1596,6 +1744,16 @@ function AgentStudio() {
           {error && (
             <div className="rounded-lg border border-coral/30 bg-coral/10 px-4 py-3 text-sm font-semibold text-coral">
               {error}
+            </div>
+          )}
+
+          {job && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-cobalt/20 bg-cobalt/5 px-4 py-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-cobalt">실제 작업 상태</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{currentStatus}</p>
+              </div>
+              <p className="text-xs font-medium text-ink/48">작업 {job.id.slice(0, 8)} · {job.status}</p>
             </div>
           )}
 
@@ -1661,16 +1819,73 @@ function AgentStudio() {
                   {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Radio className="h-8 w-8" />}
                 </div>
                 <p className="mt-4 text-xl font-semibold">
-                  {loading ? agentProgress[phase] : "Agent 대기 중"}
+                  {loading ? currentStatus : "Agent 대기 중"}
                 </p>
                 <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-ink/58">
                   {loading
-                    ? "워커가 앱을 녹화하고 표·도식과 음성을 합성하는 중입니다."
-                    : "브리프에 맞는 장면을 고른 뒤 Chromium, FFmpeg, Tesseract로 영상을 만듭니다."}
+                    ? "저장된 실제 작업 단계를 확인하고 있습니다. 창을 닫아도 이전 작업 이어보기로 다시 확인할 수 있습니다."
+                    : "목적·대상·근거를 먼저 검토하고 제작 조건을 통과한 경우에만 영상을 만듭니다."}
                 </p>
               </div>
             )}
           </div>
+
+          {job && job.planningRounds.length > 0 && (
+            <div className="rounded-lg border border-line bg-white p-4 shadow-soft">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <BrainCircuit className="h-4 w-4 text-cobalt" />
+                콘텐츠 기획 감사 기록
+              </div>
+              <div className="grid gap-3">
+                {job.planningRounds.map((round) => {
+                  const review = round.plan.contentReview;
+                  return (
+                    <details key={round.round} open={round.round === job.planningRound || job.status === "completed"} className="rounded-lg border border-line bg-canvas p-3">
+                      <summary className="cursor-pointer text-sm font-semibold">
+                        {round.round}차 기획 · {round.plan.decision === "produce" ? "제작 승인" : "자료 보완"}
+                      </summary>
+                      <p className="mt-3 text-sm font-medium leading-relaxed text-ink/68">{round.plan.summary}</p>
+                      {review && (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                          {contentReviewLabels.map(({ key, label }) => (
+                            <div key={key} className="rounded-md border border-line bg-white p-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold">{label}</span>
+                                <span className={`text-xs font-bold ${review[key].status === "pass" ? "text-mint" : "text-coral"}`}>
+                                  {review[key].status === "pass" ? "통과" : "보완"}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs font-medium leading-relaxed text-ink/54">{review[key].rationale}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {review && review.blockingIssues.length > 0 && (
+                        <div className="mt-3 rounded-md border border-coral/20 bg-coral/5 p-3">
+                          <p className="text-xs font-bold text-coral">제작을 막는 항목</p>
+                          {review.blockingIssues.map((issue) => <p key={issue} className="mt-1 text-xs font-medium text-ink/64">· {issue}</p>)}
+                        </div>
+                      )}
+                      {round.collectionReports.length > 0 && (
+                        <div className="mt-3 grid gap-2">
+                          <p className="text-xs font-bold text-ink/54">자료 수집 결과</p>
+                          {round.collectionReports.map((report, index) => (
+                            <div key={`${report.capabilityId}-${index}`} className="rounded-md border border-line bg-white p-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-semibold">{report.order}</p>
+                                <span className={`text-xs font-bold ${report.status === "있음" ? "text-mint" : "text-coral"}`}>{report.status}</span>
+                              </div>
+                              <p className="mt-1 text-xs font-medium leading-relaxed text-ink/54">{report.detail}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             <div className="rounded-lg border border-line bg-white p-4">

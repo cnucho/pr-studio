@@ -72,14 +72,26 @@
 - 캐시 재실행: OpenAI를 다시 호출하지 않고 같은 분석 결과 반환
 - `/api/health`: 최신 production 서버에서 `ok: true`
 
-### 배포 전 남은 확인
+### Railway·Supabase 실환경 추가 검증
 
-- 신규 Supabase migration 두 개는 실제 프로젝트에 적용하지 않았다.
-- 실제 비공개 bucket 업로드·worker 다운로드·작업 재개 통합 테스트가 필요하다.
-- 현재 Railway CLI는 `Unauthorized`이며 로그인된 배포 권한이 없다.
-- 로컬 Docker 실행기가 없어 Dockerfile 이미지 빌드와 health check를 컨테이너 안에서 실행하지 못했다.
-- Railway에서 `ocrStatus: checked`가 되고 한국어 핵심 문구 검사가 통과하는지 확인해야 한다.
+- Supabase staging 프로젝트에 `video_agent_v2`, `video_agent_sources` migration을 적용했다.
+- `video_agent_jobs` 확장 열, `video_agent_planning_rounds`, 비공개 `video-agent-results`와 `video-agent-sources` bucket을 확인했다.
+- 두 테이블은 RLS가 켜져 있고 `anon`, `authenticated` 직접 권한이 없다. 작업 API와 worker만 service role로 접근한다.
+- Railway staging 웹과 worker를 `agent/pr-studio-2.0` 브랜치 및 별도 Dockerfile로 배포했다.
+- worker 런타임에는 Chromium, 시스템 FFmpeg, 한국어 Tesseract와 Playwright 녹화용 FFmpeg를 포함했다.
+- staging `/api/health`에서 queue 실행, OpenAI, Supabase와 Chromium 설정이 모두 준비된 것을 확인했다.
+- 실제 작업 `a545f8b3-803d-4fd4-b538-578cb3885fc6`은 3회 기획 후 `produce`를 결정하고 재시작된 worker가 저장된 기획부터 재개해 완료했다.
+- 최종 결과는 1920×1080, 54.823초, 2,249,760바이트 MP4이며 비공개 결과 bucket의 객체 크기와 일치했다.
+- 최종 검토는 `ready: true`, `technicalReady: true`, `contentReady: true`, `ocrStatus: checked`, 누락 beat 0개, 타임라인 문제 0개와 오디오 존재를 기록했다.
+- 최초 배포에서 Playwright 녹화용 FFmpeg가 빠진 결함을 실제 작업으로 발견했다. worker 이미지에 `npx playwright install ffmpeg`를 추가하고 같은 작업을 재개해 통과시켰다.
+- 배포 이미지의 production dependency 감사는 취약점 0건이다.
+
+### 남은 인수 항목
+
+- 비공개 source bucket, 다운로드 및 실제 MP4 분석기는 로컬 실제 MP4로 검증했다.
+- 인증된 사용자의 브라우저 업로드 경로는 단계 8 UI에서 파일 입력을 연결한 뒤 최종 확인한다.
+- 로컬 Railway CLI의 폐기된 인증은 원격 OAuth 연결로 대체했다. 배포와 로그 확인에는 영향이 없다.
 
 ### 구현 감사 결론
 
-기존 MP4 분석과 Railway 실행을 위한 코드 수준의 단계 7 목표는 충족했다. 그러나 실제 Supabase migration과 Railway 웹·worker 배포, 재시작 복구 및 컨테이너 OCR 검증은 미완료다. 배포 권한과 대상 프로젝트가 확인되기 전에는 단계 7 전체 완료로 판정하지 않으며 단계 8로 진입하지 않는다.
+단계 7의 Supabase migration, Railway 웹·worker 배포, 3회 기획, 제작 게이트, 재시작 복구, 렌더, OCR 검수와 비공개 저장을 실환경에서 확인했다. 단계 7은 통과한다. 인증 브라우저의 참고영상 업로드 인수만 단계 8 최종 UI 검사에 포함한다.

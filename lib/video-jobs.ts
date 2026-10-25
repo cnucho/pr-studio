@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import type { VideoAgentPlan, VideoAgentResult } from "@/lib/video-agent";
-import type { VideoBrief } from "@/lib/video-planning";
+import type { CollectionReport, VideoBrief } from "@/lib/video-planning";
 import { VIDEO_ANALYSIS_LIMITS } from "./video-analysis";
 
 export type VideoAgentJobStatus = "queued" | "running" | "completed" | "failed";
@@ -10,6 +10,14 @@ export type VideoAgentJobOutcome = "produced" | "plan_exhausted";
 
 export type VideoAgentJobRequest = VideoBrief & {
   ownerId: string;
+};
+
+export type VideoAgentPlanningRoundRecord = {
+  round: 1 | 2 | 3;
+  plan: VideoAgentPlan;
+  collectionReports: CollectionReport[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type VideoAgentJob = {
@@ -32,6 +40,7 @@ export type VideoAgentJob = {
   completedAt?: string;
   error?: string;
   output?: VideoAgentResult;
+  planningRounds: VideoAgentPlanningRoundRecord[];
 };
 
 const bucket = process.env.VIDEO_AGENT_STORAGE_BUCKET ?? "video-agent-results";
@@ -63,6 +72,7 @@ function mapJob(row: Record<string, unknown>): VideoAgentJob {
     completedAt: row.completed_at ? String(row.completed_at) : undefined,
     error: row.error ? String(row.error) : undefined,
     output: row.output as VideoAgentResult | undefined,
+    planningRounds: [],
   };
 }
 
@@ -73,10 +83,26 @@ export function videoJobOwnedBy(request: unknown, plan: unknown, userId: string)
 }
 
 export async function readVideoJob(jobId: string, userId: string): Promise<VideoAgentJob> {
-  const { data, error } = await adminClient().from("video_agent_jobs").select("*").eq("id", jobId).single();
+  const client = adminClient();
+  const { data, error } = await client.from("video_agent_jobs").select("*").eq("id", jobId).single();
   if (error) throw error;
   if (!videoJobOwnedBy(data.request, data.plan, userId)) throw new Error("Video job not found.");
-  return mapJob(data);
+  const { data: rounds, error: roundsError } = await client
+    .from("video_agent_planning_rounds")
+    .select("round,plan,collection_reports,created_at,updated_at")
+    .eq("job_id", jobId)
+    .order("round", { ascending: true });
+  if (roundsError) throw roundsError;
+  return {
+    ...mapJob(data),
+    planningRounds: (rounds ?? []).map((row) => ({
+      round: Number(row.round) as 1 | 2 | 3,
+      plan: row.plan as VideoAgentPlan,
+      collectionReports: (row.collection_reports ?? []) as CollectionReport[],
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+    })),
+  };
 }
 
 export async function downloadQueuedVideo(jobId: string, userId: string) {
