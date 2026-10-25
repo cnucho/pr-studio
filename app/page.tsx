@@ -1516,10 +1516,10 @@ function AgentStudio() {
               </div>
               {loginSent && (
                 <div className="mt-3 space-y-2">
-                  <p className="text-xs text-ink/60">이메일로 받은 6자리 인증번호를 입력하세요.</p>
+                  <p className="text-xs text-ink/60">이메일로 받은 8자리 인증번호를 입력하세요.</p>
                   <div className="flex gap-2">
-                    <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={loginCode} onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, ""))} placeholder="인증번호 6자리" aria-label="인증번호" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
-                    <button type="button" onClick={verifyLoginCode} disabled={loginCode.length !== 6 || authBusy} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">확인</button>
+                    <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={loginCode} onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, ""))} placeholder="인증번호 8자리" aria-label="인증번호" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
+                    <button type="button" onClick={verifyLoginCode} disabled={loginCode.length !== 8 || authBusy} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">확인</button>
                   </div>
                 </div>
               )}
