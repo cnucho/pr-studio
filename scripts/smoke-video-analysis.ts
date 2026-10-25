@@ -10,7 +10,7 @@ async function main() {
   const reports = await collectPlanningOrders(
     [{ instruction: "기존 영상의 내용, 길이와 대표 화면을 확인해 주세요.", capabilityId: "video-analysis" }],
     {
-      brief: "보도자료 작성 흐름",
+      track: "press",
       sourceVideoPath,
       analysisWorkDir: path.resolve(allowedRoot),
       allowedSourceRoot: path.resolve(allowedRoot),

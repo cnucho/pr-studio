@@ -5,11 +5,11 @@ import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { createVideoAgentPlan, type VideoAgentPlan, type VideoAgentResult, type VideoAgentRunStep } from "../lib/video-agent";
 import { collectPlanningOrders } from "../lib/video-collection";
+import { collectionContextForBrief, planningBrief } from "../lib/video-job-planning";
 import { videoArtifactPaths } from "../lib/video-artifacts";
 import { VIDEO_ANALYSIS_LIMITS } from "../lib/video-analysis";
-import { trackForBrief } from "../lib/video-beats";
 import { runPlanningLoop } from "../lib/video-orchestrator";
-import { videoBriefSchema, type CollectionReport, type VideoBrief } from "../lib/video-planning";
+import type { CollectionReport, VideoBrief } from "../lib/video-planning";
 import { resolveBinary } from "../lib/video-runtime";
 
 type JobRow = {
@@ -21,18 +21,6 @@ type JobRow = {
   attempts: number;
   max_attempts: number;
 };
-
-function planningBrief(job: JobRow): VideoBrief {
-  const purpose = job.request?.purpose?.trim() || job.brief;
-  return videoBriefSchema.parse({
-    purpose,
-    targetAudience: job.request?.targetAudience?.trim() || "홍보 콘텐츠의 대상 시청자",
-    track: job.request?.track ?? trackForBrief(purpose),
-    targetDurationSec: job.request?.targetDurationSec,
-    outline: job.request?.outline?.trim() || undefined,
-    sourceVideoId: job.request?.sourceVideoId?.trim() || undefined,
-  });
-}
 
 type StoredRound = {
   round: number;
@@ -198,13 +186,12 @@ async function planJob(job: JobRow): Promise<VideoAgentPlan | null> {
       },
       collect: async (orders) => {
         await updateClaimedJob(job.id, { phase: "collecting", updated_at: now() });
-        return collectPlanningOrders(orders, {
-          brief: brief.purpose,
+        return collectPlanningOrders(orders, collectionContextForBrief(brief, {
           appUrl: job.app_url,
           sourceVideoPath,
           analysisWorkDir: artifact.workDir,
           allowedSourceRoot: artifact.workDir,
-        });
+        }));
       },
       saveRound: async (plan, reports) => {
         await savePlanningRound(job.id, plan, reports);

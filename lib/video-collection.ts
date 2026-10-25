@@ -1,15 +1,30 @@
-import { videoFixtures, videoPresets, trackForBrief } from "./video-beats";
+import { videoFixtures, videoPresets, type VideoTrack } from "./video-beats";
 import { chromeLaunchArgs, resolveChrome } from "./video-runtime";
 import { analyzeVideoFile } from "./video-analysis";
 import type { CollectionEvidence, CollectionOrder, CollectionReport } from "./video-planning";
 
 export type CollectionContext = {
-  brief: string;
+  track: VideoTrack;
   appUrl?: string;
   sourceVideoPath?: string;
   analysisWorkDir?: string;
   allowedSourceRoot?: string;
 };
+
+export type ScreenObservationTarget = {
+  tab: VideoTrack;
+  heading: string;
+};
+
+const SCREEN_OBSERVATION_TARGETS: Record<VideoTrack, ScreenObservationTarget> = {
+  press: { tab: "press", heading: "보도자료 작성기" },
+  news: { tab: "news", heading: "뉴스 분석기" },
+  youtube: { tab: "youtube", heading: "유튜브 콘텐츠 작성기" },
+};
+
+export function screenObservationTarget(track: VideoTrack): ScreenObservationTarget {
+  return SCREEN_OBSERVATION_TARGETS[track];
+}
 
 function available(order: CollectionOrder, detail: string, evidence?: CollectionEvidence[]): CollectionReport {
   return {
@@ -34,16 +49,12 @@ export async function collectPlanningOrders(
   orders: CollectionOrder[],
   context: CollectionContext,
 ): Promise<CollectionReport[]> {
-  const track = trackForBrief(context.brief);
+  const track = context.track;
   let screenObservation: Promise<string> | undefined;
 
   async function observeAppScreen() {
     if (!context.appUrl) throw new Error("앱 화면 주소가 없습니다.");
-    const target = {
-      press: { tab: "press", heading: "보도자료 작성기" },
-      news: { tab: "news", heading: "뉴스 분석기" },
-      youtube: { tab: "youtube", heading: "유튜브 콘텐츠 작성기" },
-    }[track];
+    const target = screenObservationTarget(track);
     const parsedUrl = new URL(context.appUrl);
     if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("허용되지 않은 앱 화면 주소입니다.");
 

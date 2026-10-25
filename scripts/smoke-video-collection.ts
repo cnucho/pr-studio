@@ -9,7 +9,7 @@ async function main() {
         capabilityId: "screen-observation",
       },
     ],
-    { brief: "보도자료 작성 흐름", appUrl },
+    { track: "press", appUrl },
   );
 
   console.log(JSON.stringify(reports, null, 2));
