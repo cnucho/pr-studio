@@ -1328,6 +1328,9 @@ function AgentStudio() {
   const [email, setEmail] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [loginSent, setLoginSent] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginCode, setLoginCode] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
   const [output, setOutput] = useState<VideoAgentOutput | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1352,17 +1355,41 @@ function AgentStudio() {
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
 
-  async function sendLoginLink() {
+  async function sendLoginCode() {
     setError("");
+    setAuthBusy(true);
     try {
+      const address = email.trim();
       const { error } = await videoAuthClient().auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo: window.location.origin },
+        email: address,
+        options: { shouldCreateUser: false },
       });
       if (error) throw error;
+      setLoginEmail(address);
+      setLoginCode("");
       setLoginSent(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "로그인 메일을 보내지 못했습니다.");
+      setError(error instanceof Error ? error.message : "인증번호를 보내지 못했습니다.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function verifyLoginCode() {
+    setError("");
+    setAuthBusy(true);
+    try {
+      const { data, error } = await videoAuthClient().auth.verifyOtp({
+        email: loginEmail,
+        token: loginCode,
+        type: "email",
+      });
+      if (error) throw error;
+      setSignedIn(Boolean(data.session));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "인증번호를 확인하지 못했습니다.");
+    } finally {
+      setAuthBusy(false);
     }
   }
 
@@ -1484,10 +1511,18 @@ function AgentStudio() {
             <div className="rounded-lg border border-line bg-canvas p-3">
               <p className="text-sm font-semibold">영상 제작자 로그인</p>
               <div className="mt-2 flex gap-2">
-                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일" aria-label="로그인 이메일" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
-                <button type="button" onClick={sendLoginLink} disabled={!email.trim()} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">로그인 링크</button>
+                <input type="email" value={email} onChange={(event) => { setEmail(event.target.value); setLoginSent(false); setLoginCode(""); }} placeholder="이메일" aria-label="로그인 이메일" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
+                <button type="button" onClick={sendLoginCode} disabled={!email.trim() || authBusy} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{loginSent ? "재전송" : "인증번호 받기"}</button>
               </div>
-              {loginSent && <p className="mt-2 text-xs text-ink/60">이메일의 로그인 링크를 열면 이 화면으로 돌아옵니다.</p>}
+              {loginSent && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-ink/60">이메일로 받은 6자리 인증번호를 입력하세요.</p>
+                  <div className="flex gap-2">
+                    <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={loginCode} onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, ""))} placeholder="인증번호 6자리" aria-label="인증번호" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm" />
+                    <button type="button" onClick={verifyLoginCode} disabled={loginCode.length !== 6 || authBusy} className="rounded-md bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">확인</button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : <p className="text-xs font-semibold text-mint">영상 제작자 로그인됨</p>}
           <TextArea label="Agent Brief" value={brief} rows={8} onChange={setBrief} />
