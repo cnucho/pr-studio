@@ -2691,7 +2691,7 @@ function LegacyPipeline() {
         {steps.map((step, index) => (
           <div key={step} className="contents">
             <motion.div
-              className="flex h-20 items-center justify-center rounded-lg border border-line bg-white px-3 text-center text-base font-semibold shadow-sm md:h-28 md:text-xl"
+              className="flex h-20 items-center justify-center rounded-lg border border-line bg-white px-3 text-center text-base font-semibold break-keep shadow-sm md:h-28 md:text-lg"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.15 }}
