@@ -50,9 +50,17 @@ UI의 목적은 제작이 진행되는 듯한 인상을 주는 것이 아니라 
 - `npm run build`: Next.js 15.5.28 production build 통과, 18개 페이지·API route 생성
 - `npm audit --omit=dev`: production dependency 취약점 0건(단계 7 배포 이미지 포함)
 
+### staging 배포 후 검증
+
+- 커밋 `69d39d1`을 Railway staging 웹과 worker에 배포했고 두 서비스가 모두 `SUCCESS`가 됐다.
+- `/api/health`는 queue 실행과 OpenAI, Supabase, Chromium 준비 상태를 모두 `true`로 반환했다.
+- 실제 staging 화면에서 영상 목적, 대상 시청자, 콘텐츠 유형, 목표 길이, 필수 근거와 MP4 입력을 확인했다.
+- 로그인 전에는 영상 생성과 MP4 입력이 비활성화되고, 보호된 작업 조회 API는 인증 없이 `401`을 반환했다.
+- 데스크톱 화면에서 입력 영역과 제작 영역의 배치, 라벨과 설명이 정상 표시되는 것을 확인했다.
+
 ### 남은 최종 인수
 
-- staging에 이 변경을 배포하고 실제 화면이 작은·큰 화면에서 읽히는지 확인한다.
+- 작은 화면에서 입력·감사 기록의 반응형 배치를 추가 확인한다.
 - 허용된 사용자로 OTP 로그인한 뒤 MP4 업로드, 작업 생성, 페이지 재조회와 결과 다운로드를 브라우저에서 한 번 연결 검증한다.
 - 이 인수 전에는 production으로 승격하지 않는다.
 
