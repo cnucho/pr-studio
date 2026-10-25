@@ -9,7 +9,7 @@ async function main() {
         capabilityId: "screen-observation",
       },
     ],
-    { track: "press", appUrl },
+    { track: "press", appUrl, trustedAppOrigin: new URL(appUrl).origin },
   );
 
   console.log(JSON.stringify(reports, null, 2));

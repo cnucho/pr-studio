@@ -119,7 +119,7 @@ describe("PR Studio 2.0 production gate", () => {
     expect(plan.manifest?.track).toBe("press");
     expect(plan.manifest?.audience).toBe("신규 홍보 담당자");
     expect(plan.manifest?.timing.targetSec).toBe(60);
-    expect(requests[0]).toContain("직전 수집 보고");
+    expect(requests[0]).toContain("누적 수집 보고");
     expect(requests[0]).toContain("신규 홍보 담당자");
     expect(requests[0]).toContain("보도자료 입력 예시가 있습니다");
   });

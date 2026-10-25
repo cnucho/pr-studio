@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { createVideoAgentPlan, type VideoAgentPlan, type VideoAgentResult, type VideoAgentRunStep } from "../lib/video-agent";
 import { collectPlanningOrders } from "../lib/video-collection";
-import { collectionContextForBrief, planningBrief } from "../lib/video-job-planning";
+import { collectionContextForBrief, planningBrief, restoreCollectionReports, trustedCaptureOrigin } from "../lib/video-job-planning";
 import { videoArtifactPaths } from "../lib/video-artifacts";
 import { VIDEO_ANALYSIS_LIMITS } from "../lib/video-analysis";
 import { runPlanningLoop } from "../lib/video-orchestrator";
@@ -172,9 +172,10 @@ async function planJob(job: JobRow): Promise<VideoAgentPlan | null> {
   const sourceVideoPath = await downloadSourceVideo(job, brief, artifact.workDir);
   const storedRounds = await loadPlanningRounds(job.id);
   const previousPlans = storedRounds.map((item) => item.plan);
+  const trustedAppOrigin = trustedCaptureOrigin(job.app_url, process.env.PR_STUDIO_CAPTURE_URL);
   const result = await runPlanningLoop({
     previousPlans,
-    collectionReports: storedRounds.at(-1)?.collection_reports ?? [],
+    collectionReports: restoreCollectionReports(storedRounds),
     dependencies: {
       createPlan: async ({ round, previousPlans: plans, collectionReports }) => {
         await updateClaimedJob(job.id, {
@@ -184,10 +185,13 @@ async function planJob(job: JobRow): Promise<VideoAgentPlan | null> {
         });
         return createVideoAgentPlan(brief, { round, previousPlans: plans, collectionReports });
       },
-      collect: async (orders) => {
+      collect: async (orders, round) => {
         await updateClaimedJob(job.id, { phase: "collecting", updated_at: now() });
         return collectPlanningOrders(orders, collectionContextForBrief(brief, {
           appUrl: job.app_url,
+          trustedAppOrigin,
+          round,
+          sourceVideoIdentity: brief.sourceVideoId,
           sourceVideoPath,
           analysisWorkDir: artifact.workDir,
           allowedSourceRoot: artifact.workDir,

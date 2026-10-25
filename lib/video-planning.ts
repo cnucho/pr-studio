@@ -43,12 +43,21 @@ export type CollectionEvidence = {
   value: string;
 };
 
+export type CollectionReportProvenance = {
+  track?: VideoTrack;
+  round?: 1 | 2 | 3;
+  scenarioVersion?: string;
+  inputIdentity?: string;
+  resultMarker?: string;
+};
+
 export type CollectionReport = {
   order: string;
   capabilityId: CollectionCapabilityId;
   status: "있음" | "없음";
   detail: string;
   evidence?: CollectionEvidence[];
+  provenance?: CollectionReportProvenance;
 };
 
 export const CONTENT_REVIEW_KEYS = [

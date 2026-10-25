@@ -419,7 +419,10 @@ export async function createVideoAgentPlan(
     dossier.text,
     `현재 기획 회차: ${round}/3`,
     previousPlans.length > 0 ? `이전 기획 요약:\n${JSON.stringify(previousPlans, null, 2)}` : "",
-    collectionReports.length > 0 ? `직전 수집 보고:\n${JSON.stringify(collectionReports, null, 2)}` : "",
+    collectionReports.length > 0 ? `누적 수집 보고(중복 제거·문자 예산 적용):\n${JSON.stringify(collectionReports, null, 2)}` : "",
+    round === 3
+      ? "이번은 마지막 기획 회차다. decision은 기존 계약대로 produce 또는 collect만 사용한다. 현재 누적 증거로 준비되었으면 produce를, 부족하면 collect와 실제 차단 항목을 반환한다. 이번 회차 뒤에는 새 수집을 실행하지 않는다."
+      : "",
   ].filter(Boolean).join("\n\n");
   let response: Response;
 
@@ -436,7 +439,7 @@ export async function createVideoAgentPlan(
           {
             role: "system",
             content:
-              "너는 PR Studio의 콘텐츠 중심 영상 기획자다. 화려함보다 목적과 대상에 맞는 내용, 자연스러운 내레이션, 간결한 자막, 설명과 화면의 일치를 우선한다. 한국어 JSON만 반환한다. 각 장면에 목적, 시청자가 이해할 내용, 실제 화면 동작, 다음 장면으로 넘어가는 이유를 구체적으로 쓴다. 자막은 내레이션 전체를 복사하지 말고 핵심만 80자 이내로 쓴다. 각 품질 항목을 엄격하게 점검하고 미해결 문제가 있으면 collect를 선택한다. 수집 지시는 자유로운 문장으로 쓰되 실행 가능한 capabilityId를 함께 고른다. 모든 품질 항목이 통과하고 blockingIssues가 없을 때만 readyToProduce와 decision을 produce로 정한다.",
+              "너는 PR Studio의 콘텐츠 중심 영상 기획자다. 화려함보다 목적과 대상에 맞는 내용, 자연스러운 내레이션, 간결한 자막, 설명과 화면의 일치를 우선한다. 한국어 JSON만 반환한다. 각 장면에 목적, 시청자가 이해할 내용, 실제 화면 동작, 다음 장면으로 넘어가는 이유를 구체적으로 쓴다. 자막은 내레이션 전체를 복사하지 말고 핵심만 80자 이내로 쓴다. 각 품질 항목을 엄격하게 점검하고 미해결 문제가 있으면 collect를 선택한다. 수집 지시는 자유로운 문장으로 쓰되 실행 가능한 capabilityId를 함께 고른다. 제작 전에는 콘텐츠 계획, 실제 앱 입력·결과 증거, 카드·음성·자막 capability와 preset을 판단한다. 실제 카드 이미지, 합성 음성, 적용 자막과 최종 MP4는 produce 뒤 제작·검토 단계에서 확인하므로 아직 존재하지 않는 최종 산출물을 제작 전 차단 조건으로 요구하지 않는다. 모든 제작 전 품질 항목이 통과하고 blockingIssues가 없을 때만 readyToProduce와 decision을 produce로 정한다.",
           },
           {
             role: "user",

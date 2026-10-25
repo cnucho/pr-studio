@@ -604,7 +604,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen text-ink">
+    <main className="min-h-screen text-ink" data-pr-studio-collection-contract="v1">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-4 md:px-6 lg:px-8">
         <header className="rounded-lg border border-line bg-white px-4 py-4 shadow-soft md:px-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -921,6 +921,8 @@ function PressReleaseTool() {
       action={
         <button
           type="button"
+          data-collection-action="press"
+          data-collection-loading={loading ? "true" : "false"}
           onClick={generate}
           disabled={loading}
           className="focus-ring flex h-11 items-center gap-2 rounded-md bg-cobalt px-4 text-sm font-semibold text-white transition hover:bg-cobalt/90 disabled:cursor-not-allowed disabled:opacity-60"
@@ -935,11 +937,13 @@ function PressReleaseTool() {
           <div className="grid gap-4">
             <Field
               label="정책명"
+              collectionField="policy-name"
               value={form.policyName}
               onChange={(value) => setForm({ ...form, policyName: value })}
             />
             <TextArea
               label="사업내용"
+              collectionField="business"
               value={form.business}
               rows={4}
               onChange={(value) => setForm({ ...form, business: value })}
@@ -947,17 +951,20 @@ function PressReleaseTool() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
               <Field
                 label="예산"
+                collectionField="budget"
                 value={form.budget}
                 onChange={(value) => setForm({ ...form, budget: value })}
               />
               <Field
                 label="대상"
+                collectionField="audience"
                 value={form.audience}
                 onChange={(value) => setForm({ ...form, audience: value })}
               />
             </div>
             <TextArea
               label="기대효과"
+              collectionField="expected-effect"
               value={form.expectedEffect}
               rows={3}
               onChange={(value) => setForm({ ...form, expectedEffect: value })}
@@ -982,7 +989,7 @@ function PressReleaseTool() {
           </div>
         </section>
 
-        <ResultPanel empty={!output} error={error}>
+        <ResultPanel empty={!output} error={error} collectionTrack="press">
           {output && <PressReleaseResult output={output} />}
         </ResultPanel>
       </div>
@@ -1019,6 +1026,8 @@ function NewsAnalyzerTool() {
       action={
         <button
           type="button"
+          data-collection-action="news"
+          data-collection-loading={loading ? "true" : "false"}
           onClick={generate}
           disabled={loading}
           className="focus-ring flex h-11 items-center gap-2 rounded-md bg-mint px-4 text-sm font-semibold text-white transition hover:bg-mint/90 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1032,12 +1041,13 @@ function NewsAnalyzerTool() {
         <section className="rounded-lg border border-line bg-white p-4">
           <TextArea
             label="기사 입력"
+            collectionField="articles"
             value={articles}
             rows={18}
             onChange={setArticles}
           />
         </section>
-        <ResultPanel empty={!output} error={error}>
+        <ResultPanel empty={!output} error={error} collectionTrack="news">
           {output && <NewsAnalysisResult output={output} />}
         </ResultPanel>
       </div>
@@ -1113,6 +1123,8 @@ function YoutubeContentTool() {
       action={
         <button
           type="button"
+          data-collection-action="youtube"
+          data-collection-loading={loading ? "true" : "false"}
           onClick={generate}
           disabled={loading || extracting}
           className="focus-ring flex h-11 items-center gap-2 rounded-md bg-coral px-4 text-sm font-semibold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1146,6 +1158,7 @@ function YoutubeContentTool() {
             )}
             <TextArea
               label="정책자료 텍스트"
+              collectionField="policy-text"
               value={form.policyText}
               rows={13}
               onChange={(value) => setForm({ ...form, policyText: value })}
@@ -1153,11 +1166,13 @@ function YoutubeContentTool() {
             <div className="grid gap-4 md:grid-cols-2">
               <Field
                 label="대상"
+                collectionField="audience"
                 value={form.audience}
                 onChange={(value) => setForm({ ...form, audience: value })}
               />
               <Field
                 label="영상 길이"
+                collectionField="duration-minutes"
                 value={form.durationMinutes}
                 onChange={(value) =>
                   setForm({ ...form, durationMinutes: value })
@@ -1166,7 +1181,7 @@ function YoutubeContentTool() {
             </div>
           </div>
         </section>
-        <ResultPanel empty={!output} error={error}>
+        <ResultPanel empty={!output} error={error} collectionTrack="youtube">
           {output && <YoutubeResult output={output} />}
         </ResultPanel>
       </div>
@@ -2424,15 +2439,18 @@ function Field({
   label,
   value,
   onChange,
+  collectionField,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  collectionField?: string;
 }) {
   return (
     <label className="grid gap-2 text-sm font-semibold text-ink/76">
       {label}
       <input
+        data-collection-field={collectionField}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="focus-ring h-11 rounded-md border border-line bg-white px-3 text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition hover:border-cobalt/45"
@@ -2446,16 +2464,19 @@ function TextArea({
   value,
   rows,
   onChange,
+  collectionField,
 }: {
   label: string;
   value: string;
   rows: number;
   onChange: (value: string) => void;
+  collectionField?: string;
 }) {
   return (
     <label className="grid gap-2 text-sm font-semibold text-ink/76">
       {label}
       <textarea
+        data-collection-field={collectionField}
         value={value}
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
@@ -2469,15 +2490,25 @@ function ResultPanel({
   empty,
   error,
   children,
+  collectionTrack,
 }: {
   empty: boolean;
   error: string;
   children: React.ReactNode;
+  collectionTrack?: "press" | "news" | "youtube";
 }) {
   return (
-    <section className="min-h-[520px] rounded-lg border border-line bg-white p-4 shadow-soft">
+    <section
+      className="min-h-[520px] rounded-lg border border-line bg-white p-4 shadow-soft"
+      data-collection-result={collectionTrack}
+      data-collection-result-marker={collectionTrack ? `${collectionTrack}-result-ready` : undefined}
+      data-collection-ready={!empty && !error ? "true" : "false"}
+    >
       {error && (
-        <div className="mb-4 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm font-semibold text-coral">
+        <div
+          className="mb-4 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm font-semibold text-coral"
+          data-collection-error={collectionTrack}
+        >
           {error}
         </div>
       )}

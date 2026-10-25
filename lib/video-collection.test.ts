@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectPlanningOrders, screenObservationTarget } from "./video-collection";
+import { collectPlanningOrders, screenCollectionScenario, screenObservationTarget, trustedAppTarget } from "./video-collection";
 
 describe("PR Studio 2.0 collection registry", () => {
   it("returns actual fixture and preset evidence for registered capabilities", async () => {
@@ -60,5 +60,22 @@ describe("PR Studio 2.0 collection registry", () => {
     ["youtube", { tab: "youtube", heading: "유튜브 콘텐츠 작성기" }],
   ] as const)("routes %s screen observation to its own tab", (track, expected) => {
     expect(screenObservationTarget(track)).toEqual(expected);
+  });
+
+  it.each([
+    ["press", "press", "press-result-ready", ["policy-name", "business", "budget", "audience", "expected-effect"]],
+    ["news", "news", "news-result-ready", ["articles"]],
+    ["youtube", "youtube", "youtube-result-ready", ["policy-text", "audience", "duration-minutes"]],
+  ] as const)("defines a deterministic %s interaction scenario", (track, action, resultMarker, fields) => {
+    const scenario = screenCollectionScenario(track);
+    expect(scenario.action).toBe(action);
+    expect(scenario.resultMarker).toBe(resultMarker);
+    expect(scenario.fields.map((field) => field.key)).toEqual(fields);
+  });
+
+  it("allows only the configured app origin", () => {
+    expect(trustedAppTarget("https://example.com/path", "https://example.com").origin).toBe("https://example.com");
+    expect(() => trustedAppTarget("https://attacker.example/path", "https://example.com")).toThrow("신뢰 origin");
+    expect(() => trustedAppTarget("file:///tmp/app", "https://example.com")).toThrow("허용되지 않은");
   });
 });

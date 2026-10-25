@@ -167,7 +167,7 @@ export type VideoPreset = {
 };
 
 const sharedTools: VideoPreset["tools"] = [
-  { id: "chromium", description: "앱 화면을 열고 입력, 클릭, 화면 글자, 스크린샷, 동작 녹화를 한다" },
+  { id: "chromium", description: "기획 수집에서는 등록된 예시를 앱에 입력하고 실행해 결과 문구를 확인하며, 제작 승인 뒤에는 정해진 장면 동작을 녹화한다" },
   { id: "html-card", description: "표, 차트, 도식을 1920x1080 카드 이미지로 만든다" },
   { id: "openai-tts", description: "한국어 문맥과 문장 호흡을 반영한 명시적 OpenAI 음성으로 만든다" },
   { id: "ffmpeg", description: "장면, 음성, 하단 자막을 1080p MP4로 조립한다" },

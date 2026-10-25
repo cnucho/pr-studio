@@ -1,4 +1,5 @@
 import type { VideoAgentPlan } from "./video-agent";
+import { normalizeCollectionReportsForPlanning, pendingCollectionOrders } from "./video-evidence";
 import type { CollectionOrder, CollectionReport } from "./video-planning";
 
 export type PlanningLoopResult =
@@ -25,7 +26,7 @@ export async function runPlanningLoop({
   dependencies: PlanningLoopDependencies;
 }): Promise<PlanningLoopResult> {
   const plans = [...previousPlans];
-  let reports = collectionReports;
+  const reports = [...collectionReports];
   let lastPlan = plans.at(-1);
 
   for (let round = plans.length + 1; round <= 3; round += 1) {
@@ -33,7 +34,7 @@ export async function runPlanningLoop({
     const plan = await dependencies.createPlan({
       round: typedRound,
       previousPlans: [...plans],
-      collectionReports: reports,
+      collectionReports: normalizeCollectionReportsForPlanning(reports),
     });
     lastPlan = plan;
 
@@ -42,8 +43,15 @@ export async function runPlanningLoop({
       return { outcome: "produce", plan };
     }
 
-    reports = await dependencies.collect(plan.collectionOrders, typedRound);
-    await dependencies.saveRound(plan, reports);
+    if (typedRound === 3) {
+      await dependencies.saveRound(plan, []);
+      plans.push(plan);
+      return { outcome: "plan_exhausted", plan };
+    }
+
+    const collected = await dependencies.collect(pendingCollectionOrders(plan.collectionOrders, reports), typedRound);
+    reports.push(...collected);
+    await dependencies.saveRound(plan, collected);
     plans.push(plan);
   }
 
