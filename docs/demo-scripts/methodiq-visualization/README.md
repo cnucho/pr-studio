@@ -5,7 +5,7 @@ MethodIQ 시각화 도구를 직접 광고하기보다, 조사·정책·학술 �
 ## 산출물
 
 - `good-visualization-guide-ko.md`: 블로그·사내 게시·수업 자료로 사용할 수 있는 본문
-- `storyboard-lecture.json`: 약 13분 30초 수업 영상의 장면, 내레이션, 화면 자막 원본
+- `storyboard-lecture.json`: 약 15분 30초 수업 영상의 장면, 내레이션, 화면 자막 원본
 - `storyboard.json`: 짧은 소개판의 원본(보존용)
 - `visual-guide.html`: 전체 흐름을 브라우저에서 확인하는 미리보기
 - `render_scene.py`: 1920×1080 강의 장면 렌더러
@@ -15,18 +15,21 @@ MethodIQ 시각화 도구를 직접 광고하기보다, 조사·정책·학술 �
 
 - 제품 기능 나열보다 시각적 판단 원칙을 먼저 설명한다.
 - AI 시대에도 시각화가 필요한 이유와 기술 접근성 변화부터 설명한다.
+- Excel, SPSS, JASP, Tableau, ggplot2, Python, 웹 차트 도구와 Visualization MCP를 작업 기준으로 비교한다.
 - 같은 정보를 텍스트·표·차트로 제시하고 각각의 장단점을 비교한다.
 - 도식, 수치 차트, 설문 시각화가 답하는 질문을 구분한다.
 - 한 화면에는 하나의 결론만 둔다.
 - 색상, 라벨, 축, 단위와 출처를 장식이 아닌 의미 체계로 다룬다.
 - MethodIQ Diagram Studio, Chart Studio, Survey Visualization은 마지막에 원칙을 반복 적용하는 수단으로만 소개한다.
-- 25개 장면 사이에 읽기 시간을 두어 발표 영상이 아니라 수업용 미니 강연으로 구성한다.
+- 34개 장면 사이에 읽기 시간을 두어 발표 영상이 아니라 수업용 강연으로 구성한다.
 
 ## 렌더링
 
 ```powershell
 node docs\demo-scripts\methodiq-visualization\render.mjs
 ```
+
+한국어 음성은 기본적으로 Google Cloud TTS `ko-KR-Chirp3-HD-Kore`를 사용한다. 로컬 키 파일 또는 Railway PR Studio staging의 `GOOGLE_SERVICE_ACCOUNT_JSON`을 주입해 실행하며, 키와 생성 미디어는 Git에 포함하지 않는다. 다른 음성을 명시적으로 시험할 때만 `METHODIQ_VISUALIZATION_TTS_PROVIDER`를 변경한다.
 
 완성 영상 `good-visualization-lecture-ko.mp4`와 중간 산출물은 Git에 포함되지 않는 `out/methodiq-visualization/`에 생성된다.
 

@@ -318,6 +318,147 @@ def draw_visual(draw: ImageDraw.ImageDraw, scene: dict, box: tuple[int, int, int
             draw.rounded_rectangle((px1 + 45, py2 - 150 + i * 34, px1 + 45 + w, py2 - 138 + i * 34), radius=6, fill="#dfe3e9")
         draw.text((px1 + 45, py2 - 38), "주: 가중 비율, 무응답 제외 · 자료: 금융생활 가상조사", font=font(15), fill=MUTED)
         return
+    if kind == "tool-map":
+        px1, py1, px2, py2 = x1 + 95, y1 + 85, x2 - 65, y2 - 105
+        draw.line((px1, py1, px1, py2, px2, py2), fill=GRAY, width=4)
+        draw.text((px1 - 58, py1 - 12), "높은\n통제", font=font(18, True), fill=MUTED)
+        draw.text((px1 - 42, py2 + 22), "낮은\n통제", font=font(18, True), fill=MUTED)
+        draw.text((px1, py2 + 44), "빠른 단발 작업", font=font(18, True), fill=MUTED)
+        draw.text((px2 - 130, py2 + 44), "반복·자동화", font=font(18, True), fill=MUTED)
+        points = [
+            ("Excel", .18, .28, ORANGE), ("SPSS·JASP", .30, .52, MINT),
+            ("Tableau", .62, .48, BLUE), ("ggplot2", .77, .82, INK),
+            ("Python", .88, .72, "#6d5bd0"), ("Web tools", .46, .24, RED),
+            ("MCP", .72, .60, "#19706a"),
+        ]
+        for label, rx, ry, color in points:
+            xx = px1 + int((px2 - px1) * rx)
+            yy = py2 - int((py2 - py1) * ry)
+            draw.ellipse((xx - 13, yy - 13, xx + 13, yy + 13), fill=color)
+            draw.text((xx + 18, yy - 14), label, font=font(18, True), fill=INK)
+        return
+    if kind == "stats-packages":
+        cards = [
+            ("SPSS", "폭넓은 통계·설문\n데이터 관리·조직 표준", "비용 · 출판 마감 수작업", BLUE),
+            ("JASP", "무료·쉬운 학습\n고전·베이지안 결과 연동", "자유 그래픽보다 분석 그림", MINT),
+        ]
+        for i, (name, good, limit, color) in enumerate(cards):
+            bx = x1 + 30 + i * 415
+            rr(draw, (bx, y1 + 55, bx + 380, y2 - 55), 28, "#ffffff", color, 4)
+            draw.text((bx + 32, y1 + 92), name, font=font(38, True), fill=color)
+            draw.text((bx + 32, y1 + 175), "강점", font=font(18, True), fill=MUTED)
+            text_block(draw, (bx + 32, y1 + 215), good, font(23, True), INK, 310, 12)
+            draw.line((bx + 32, y1 + 360, bx + 348, y1 + 360), fill=LINE, width=2)
+            draw.text((bx + 32, y1 + 400), "한계", font=font(18, True), fill=MUTED)
+            text_block(draw, (bx + 32, y1 + 440), limit, font(21), "#4b5768", 310, 11)
+        return
+    if kind == "excel-tool":
+        stages = [("데이터", "표 안에서\n바로 확인"), ("추천 차트", "빠른 초안"), ("Office", "복사·연결")]
+        for i, (title, note) in enumerate(stages):
+            bx = x1 + 35 + i * 270
+            rr(draw, (bx, y1 + 80, bx + 220, y1 + 270), 22, "#ffffff", MINT if i == 0 else LINE, 3)
+            draw.text((bx + 24, y1 + 115), title, font=font(25, True), fill=INK)
+            text_block(draw, (bx + 24, y1 + 165), note, font(19), MUTED, 170, 10)
+            if i < 2:
+                arrow(draw, (bx + 220, y1 + 175), (bx + 270, y1 + 175), GRAY, 4)
+        warnings = ["수동 복사", "축·색 반복 조정", "변경 이력 추적", "대량 재생산"]
+        draw.text((x1 + 40, y1 + 350), "작업이 커질 때 생기는 비용", font=font(23, True), fill=INK)
+        for i, item in enumerate(warnings):
+            bx = x1 + 40 + (i % 2) * 400
+            by = y1 + 410 + (i // 2) * 105
+            rr(draw, (bx, by, bx + 355, by + 75), 16, "#fff7f0", "#f2c3a8", 2)
+            draw.text((bx + 22, by + 23), item, font=font(20, True), fill=ORANGE)
+        return
+    if kind == "tableau-tool":
+        draw.text((x1 + 35, y1 + 45), "질문 → 즉시 반응 → 후속 질문", font=font(27, True), fill=INK)
+        rr(draw, (x1 + 35, y1 + 110, x2 - 35, y2 - 70), 28, "#ffffff", LINE, 2)
+        rr(draw, (x1 + 60, y1 + 140, x1 + 235, y2 - 100), 18, "#f0f3f7", LINE, 1)
+        for i, label in enumerate(["기간", "지역", "고객층", "상품"]):
+            draw.text((x1 + 82, y1 + 175 + i * 90), label, font=font(19, True), fill=INK)
+            draw.rounded_rectangle((x1 + 82, y1 + 210 + i * 90, x1 + 205, y1 + 226 + i * 90), radius=7, fill=BLUE if i == 2 else GRAY)
+        vals = [42, 68, 54, 73, 46]
+        for i, v in enumerate(vals):
+            bx = x1 + 310 + i * 85
+            draw.rectangle((bx, y2 - 165 - v * 5, bx + 55, y2 - 165), fill=BLUE if i == 3 else GRAY)
+        draw.line((x1 + 280, y2 - 165, x2 - 85, y2 - 165), fill=INK, width=3)
+        draw.text((x1 + 305, y1 + 155), "필터를 바꾸면 분석 화면이 즉시 갱신", font=font(21, True), fill=BLUE)
+        return
+    if kind == "ggplot-tool":
+        layers = [
+            ("DATA", "정돈된 데이터", "#e9eefb"), ("AES", "위치·색·크기", "#dce7ff"),
+            ("GEOM", "점·선·막대", "#cddcff"), ("SCALE", "축·범례", "#b9ceff"),
+            ("THEME", "폰트·여백", "#9fb8ff"),
+        ]
+        for i, (tag, note, color) in enumerate(layers):
+            bx = x1 + 70 + i * 135
+            by = y1 + 95 + (4 - i) * 75
+            rr(draw, (bx, by, bx + 420, by + 115), 18, color, "#9cb3e9", 2)
+            draw.text((bx + 24, by + 18), tag, font=font(20, True), fill=BLUE)
+            draw.text((bx + 24, by + 57), note, font=font(22, True), fill=INK)
+        draw.text((x1 + 70, y2 - 85), "데이터가 바뀌어도 같은 문법으로 다시 생성", font=font(21, True), fill=INK)
+        return
+    if kind == "python-tools":
+        cards = [
+            ("Matplotlib", "세밀한 통제\n정적·출판 출력", BLUE),
+            ("Seaborn", "통계 그래픽\n빠른 기본 미관", MINT),
+            ("Plotly", "툴팁·확대\n인터랙티브 HTML", ORANGE),
+            ("Altair", "선언형 문법\n간결한 탐색", "#6d5bd0"),
+        ]
+        for i, (name, note, color) in enumerate(cards):
+            col, row = i % 2, i // 2
+            bx, by = x1 + 35 + col * 405, y1 + 55 + row * 315
+            rr(draw, (bx, by, bx + 365, by + 270), 25, "#ffffff", color, 3)
+            draw.text((bx + 26, by + 35), name, font=font(27, True), fill=color)
+            text_block(draw, (bx + 26, by + 105), note, font(21, True), INK, 300, 13)
+            draw.text((bx + 26, by + 220), "코드 · 환경 · 내보내기 검증", font=font(16), fill=MUTED)
+        return
+    if kind == "web-tools":
+        cards = [
+            ("Datawrapper", "뉴스·보고서형\n차트·표·지도", BLUE),
+            ("Flourish", "애니메이션·스토리\n샌키·네트워크", ORANGE),
+            ("Observable", "코드와 문서가 만나는\n반응형 데이터 페이지", INK),
+        ]
+        for i, (name, note, color) in enumerate(cards):
+            bx = x1 + 18 + i * 280
+            rr(draw, (bx, y1 + 90, bx + 255, y2 - 100), 25, color, color, 1)
+            draw.text((bx + 24, y1 + 130), name, font=font(25, True), fill="#ffffff")
+            text_block(draw, (bx + 24, y1 + 220), note, font(20), "#ffffff", 205, 13)
+            draw.text((bx + 24, y2 - 165), "빠른 공개", font=font(18, True), fill="#ffffff")
+        draw.text((x1 + 35, y2 - 70), "확인: 외부 업로드 정책 · 템플릿 종속 · 무료/유료 기능", font=font(18, True), fill=MUTED)
+        return
+    if kind == "mcp-tool":
+        stages = [
+            ("대화", "독자·질문\n수정 의견", BLUE),
+            ("명세", "데이터·메타\n표현 규칙", ORANGE),
+            ("도구", "차트·도식\n한글 완결", MINT),
+            ("출력", "SVG·PNG\nHTML·편집", INK),
+        ]
+        for i, (title, note, color) in enumerate(stages):
+            bx = x1 + 15 + i * 205
+            rr(draw, (bx, y1 + 130, bx + 175, y1 + 350), 22, "#ffffff", color, 4)
+            draw.text((bx + 24, y1 + 170), title, font=font(25, True), fill=color)
+            text_block(draw, (bx + 24, y1 + 235), note, font(18, True), INK, 130, 11)
+            if i < 3:
+                arrow(draw, (bx + 175, y1 + 240), (bx + 205, y1 + 240), GRAY, 4)
+        rr(draw, (x1 + 70, y1 + 440, x2 - 70, y2 - 90), 22, "#f0f3f7", LINE, 2)
+        draw.text((x1 + 100, y1 + 475), "강점", font=font(18, True), fill=BLUE)
+        draw.text((x1 + 180, y1 + 475), "자연어 수정 · 반복 가능한 규칙 · 편집 가능한 결과", font=font(19, True), fill=INK)
+        draw.text((x1 + 100, y1 + 535), "한계", font=font(18, True), fill=ORANGE)
+        draw.text((x1 + 180, y1 + 535), "데이터 오류와 불명확한 질문은 별도 검증", font=font(19, True), fill=INK)
+        return
+    if kind == "tool-choice":
+        rows = [
+            ("오늘 한 장", "Excel", ORANGE), ("분석 진단", "SPSS · JASP", MINT),
+            ("반복 출판", "ggplot2 · Python", BLUE), ("탐색 대시보드", "Tableau", "#6d5bd0"),
+            ("웹 스토리", "Datawrapper · Flourish", RED), ("대화형 편집", "Visualization MCP", INK),
+        ]
+        for i, (task, tool, color) in enumerate(rows):
+            yy = y1 + 45 + i * 103
+            draw.text((x1 + 35, yy + 16), task, font=font(20, True), fill=INK)
+            draw.rounded_rectangle((x1 + 250, yy, x2 - 35, yy + 68), radius=16, fill="#ffffff", outline=LINE, width=2)
+            draw.rounded_rectangle((x1 + 250, yy, x1 + 268, yy + 68), radius=8, fill=color)
+            draw.text((x1 + 295, yy + 18), tool, font=font(20, True), fill=color)
+        return
     if kind == "ai-case":
         for i, (title, items, color, foot) in enumerate([("제작 중심", ["도구 학습", "코드 작성", "레이아웃 조정", "파일 변환"], "#eef1f5", "기술이 병목"), ("AI 협업", ["질문 설계", "메타 검토", "표현 비평", "반복 수정"], "#17283f", "판단이 차별점")]):
             bx = x1 + 25 + i * 425
