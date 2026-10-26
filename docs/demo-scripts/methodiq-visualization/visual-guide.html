@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>좋은 시각화 만들기</title>
+  <style>
+    :root { --ink:#122033; --muted:#6f7b8b; --paper:#f4f0e8; --panel:#fffdf8; --blue:#1f5eff; --orange:#ef7d3b; --mint:#4db6a4; --line:#d8d3c9; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--paper); color:var(--ink); font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+    body:before { content:""; position:fixed; inset:0; background:radial-gradient(circle at 88% 10%,rgba(31,94,255,.11),transparent 28%),radial-gradient(circle at 9% 86%,rgba(239,125,59,.09),transparent 31%); }
+    .slide { position:relative; width:1920px; height:1080px; padding:92px 112px 72px; display:grid; grid-template-columns: 43% 57%; gap:72px; }
+    .copy { display:flex; flex-direction:column; justify-content:center; z-index:2; }
+    .eyebrow { font-size:21px; font-weight:800; letter-spacing:.18em; color:var(--blue); margin-bottom:30px; }
+    h1 { margin:0; font-family:"Noto Serif KR","Batang",serif; font-size:76px; line-height:1.14; letter-spacing:-.045em; white-space:pre-line; }
+    .body { margin-top:32px; max-width:690px; font-size:29px; line-height:1.62; letter-spacing:-.025em; color:#435064; }
+    .caption { display:inline-flex; align-items:center; width:max-content; max-width:690px; margin-top:38px; padding:13px 20px; border-radius:999px; background:var(--ink); color:white; font-size:20px; font-weight:700; letter-spacing:-.01em; }
+    .visual { align-self:center; height:760px; padding:46px; border-radius:42px; background:rgba(255,253,248,.92); border:1px solid rgba(18,32,51,.09); box-shadow:0 36px 90px rgba(35,47,70,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:2; }
+    .brand { position:absolute; left:112px; bottom:38px; font-size:17px; font-weight:800; letter-spacing:.08em; color:#7b8490; }
+    .scene { position:absolute; right:112px; bottom:38px; font-size:17px; color:#8b94a1; }
+    .opening-mark { position:relative; width:560px; height:560px; }
+    .opening-mark .ring { position:absolute; border:2px solid rgba(31,94,255,.22); border-radius:50%; }
+    .ring.r1 { inset:0; } .ring.r2 { inset:82px; border-color:rgba(239,125,59,.3); } .ring.r3 { inset:166px; border-color:rgba(77,182,164,.45); }
+    .opening-mark .dot { position:absolute; width:30px; height:30px; background:var(--blue); border-radius:50%; left:265px; top:265px; box-shadow:0 0 0 18px rgba(31,94,255,.12); }
+    .opening-mark .axis { position:absolute; left:278px; top:36px; width:3px; height:488px; background:linear-gradient(var(--blue),rgba(31,94,255,.05)); transform:rotate(46deg); transform-origin:center; }
+    .question-grid { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+    .q-card { min-height:250px; padding:30px; border:1px solid var(--line); border-radius:28px; display:flex; flex-direction:column; justify-content:space-between; }
+    .q-card strong { font-size:31px; } .q-card span { font-size:21px; color:var(--muted); }
+    .q-icon { height:92px; display:flex; align-items:center; gap:12px; }
+    .node { width:74px; height:46px; border:3px solid var(--blue); border-radius:13px; } .node.small { width:52px; border-color:var(--orange); }
+    .arrow { width:72px; height:3px; background:var(--ink); position:relative; } .arrow:after { content:""; position:absolute; right:-2px; top:-6px; border-left:12px solid var(--ink); border-top:7px solid transparent; border-bottom:7px solid transparent; }
+    .bar { border-radius:9px; background:var(--blue); height:20px; } .bar.muted { background:#ccd3dd; }
+    .before-after { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .mini { height:560px; border:1px solid var(--line); border-radius:28px; padding:28px; }
+    .mini.bad { background:#faf9f6; } .mini.good { background:#fff; border:3px solid rgba(31,94,255,.28); }
+    .mini .tag { font-weight:800; font-size:18px; color:var(--muted); } .mini h3 { font-family:"Noto Serif KR",serif; font-size:27px; line-height:1.35; margin:22px 0 34px; }
+    .bars { display:flex; align-items:flex-end; gap:14px; height:260px; border-left:2px solid #bbc3ce; border-bottom:2px solid #bbc3ce; padding:10px 16px 0; }
+    .bars i { width:48px; background:#cbd2dc; display:block; border-radius:9px 9px 0 0; } .good .bars i:nth-child(3) { background:var(--blue); }
+    .legend { margin-top:22px; font-size:17px; color:var(--muted); }
+    .hierarchy-box { width:100%; }
+    .metric { font-size:112px; font-weight:900; color:var(--blue); letter-spacing:-.07em; }
+    .metric-label { font-size:27px; font-weight:700; margin-top:-8px; }
+    .compare { margin-top:52px; display:grid; gap:18px; }
+    .compare-row { display:grid; grid-template-columns:120px 1fr 80px; gap:18px; align-items:center; font-size:21px; }
+    .compare-track { height:22px; background:#e4e7eb; border-radius:999px; overflow:hidden; } .compare-fill { height:100%; background:#aeb7c5; border-radius:999px; } .compare-row.primary .compare-fill { background:var(--blue); }
+    .footnote { margin-top:54px; padding-top:20px; border-top:1px solid var(--line); font-size:17px; color:#8a929d; }
+    .color-board { width:100%; }
+    .swatches { display:flex; gap:16px; margin-bottom:54px; }
+    .swatch { flex:1; height:120px; border-radius:20px; padding:18px; color:white; font-weight:800; display:flex; align-items:flex-end; }
+    .direct-line { display:grid; grid-template-columns:120px 1fr; gap:16px; align-items:center; margin:25px 0; font-size:22px; font-weight:700; }
+    .line-sample { height:8px; border-radius:99px; background:var(--blue); } .line-sample.secondary { background:#aeb7c5; width:76%; } .line-sample.warn { background:var(--orange); width:42%; }
+    .diagram-board { position:relative; width:100%; height:540px; }
+    .d-node { position:absolute; width:210px; min-height:108px; padding:24px; border-radius:24px; background:white; border:2px solid #d6dce5; font-size:24px; font-weight:800; text-align:center; display:flex; align-items:center; justify-content:center; box-shadow:0 18px 30px rgba(20,38,70,.08); }
+    .d-node.cause { left:30px; top:215px; border-color:var(--blue); } .d-node.mediator { left:355px; top:80px; border-color:var(--orange); } .d-node.outcome { right:20px; top:215px; border-color:var(--mint); } .d-node.mod { left:355px; bottom:30px; border-style:dashed; }
+    .svg-lines { position:absolute; inset:0; width:100%; height:100%; }
+    .chart-board { width:100%; position:relative; padding:26px 16px 10px; }
+    .chart-title { font-family:"Noto Serif KR",serif; font-size:31px; font-weight:800; margin-bottom:50px; }
+    .c-row { display:grid; grid-template-columns:100px 1fr 88px; align-items:center; gap:18px; margin:23px 0; font-size:20px; }
+    .c-track { height:38px; background:#e8ebef; border-radius:5px; overflow:hidden; } .c-fill { height:100%; background:#aeb7c5; } .c-row.active .c-fill { background:var(--blue); }
+    .source { margin-top:46px; font-size:16px; color:#858e9b; }
+    .report-page { width:650px; height:640px; background:white; box-shadow:0 20px 54px rgba(30,42,65,.16); padding:46px 50px; }
+    .report-page .headline { font-family:"Noto Serif KR",serif; font-size:28px; font-weight:800; border-bottom:3px solid var(--ink); padding-bottom:19px; }
+    .report-chart { height:270px; margin:32px 0 22px; display:flex; align-items:flex-end; gap:24px; border-bottom:1px solid #b7bec8; padding:0 25px; } .report-chart div { width:74px; background:#cbd2dc; } .report-chart div:nth-child(3) { background:var(--blue); }
+    .report-text { height:12px; margin:12px 0; background:#dfe3e9; border-radius:5px; } .report-text.short { width:70%; }
+    .report-note { margin-top:24px; padding-top:15px; border-top:1px solid #d9dde3; font-size:14px; color:#7b8490; }
+    .workflow { width:100%; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+    .step { width:168px; height:168px; border-radius:50%; background:#fff; border:2px solid #d8dde6; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; font-weight:800; font-size:22px; text-align:center; } .step b { color:var(--blue); font-size:17px; }
+    .step-arrow { font-size:34px; color:#8a94a3; }
+    .tool-grid { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+    .tool { min-height:330px; border-radius:28px; padding:32px; color:white; display:flex; flex-direction:column; justify-content:space-between; }
+    .tool:nth-child(1){background:#1f5eff}.tool:nth-child(2){background:#15253a}.tool:nth-child(3){background:#ef7d3b}.tool small{font-size:16px;letter-spacing:.1em}.tool strong{font-size:29px;line-height:1.25}.tool span{font-size:18px;line-height:1.5;opacity:.86}
+  </style>
+</head>
+<body><main id="app"></main>
+<script>
+  const visual = (kind) => {
+    if (kind === 'opening') return `<div class="opening-mark"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="axis"></div><div class="dot"></div></div>`;
+    if (kind === 'question') return `<div class="question-grid"><div class="q-card"><div class="q-icon"><div class="node"></div><div class="arrow"></div><div class="node small"></div></div><strong>구조·관계</strong><span>도식 · 연구모형 · 흐름도</span></div><div class="q-card"><div class="q-icon" style="align-items:flex-end"><div class="bar muted" style="width:46px;height:42px"></div><div class="bar" style="width:46px;height:82px"></div><div class="bar muted" style="width:46px;height:60px"></div></div><strong>크기·차이</strong><span>막대 · 점 · 순위</span></div><div class="q-card"><div class="q-icon"><svg width="180" height="80"><polyline points="0,70 35,52 70,60 110,25 175,10" fill="none" stroke="#1f5eff" stroke-width="7"/></svg></div><strong>시간·변화</strong><span>선 · 기준선 · 추세</span></div><div class="q-card"><div class="q-icon"><div class="bar" style="width:46%;background:#4db6a4"></div><div class="bar" style="width:31%;background:#aeb7c5"></div></div><strong>분포·응답</strong><span>누적막대 · 소형 다중</span></div></div>`;
+    if (kind === 'before-after') return `<div class="before-after"><div class="mini bad"><div class="tag">BEFORE</div><h3>연령별 금융상품 이용 현황</h3><div class="bars"><i style="height:41%;background:#9c7bd8"></i><i style="height:62%;background:#4db6a4"></i><i style="height:88%;background:#ef7d3b"></i><i style="height:69%;background:#1f5eff"></i><i style="height:48%;background:#d45f78"></i></div><div class="legend">20대　30대　40대　50대　60대</div></div><div class="mini good"><div class="tag" style="color:#1f5eff">AFTER</div><h3>모바일 투자 이용률은 40대에서 가장 높다</h3><div class="bars"><i style="height:41%"></i><i style="height:62%"></i><i style="height:88%"></i><i style="height:69%"></i><i style="height:48%"></i></div><div class="legend">직접 라벨 · 핵심 계열 한 색 · 단위 표시</div></div></div>`;
+    if (kind === 'hierarchy') return `<div class="hierarchy-box"><div class="metric">47%</div><div class="metric-label">핵심 행동 전환율</div><div class="compare"><div class="compare-row primary"><span>주요 집단</span><div class="compare-track"><div class="compare-fill" style="width:82%"></div></div><b>47%</b></div><div class="compare-row"><span>비교 집단 A</span><div class="compare-track"><div class="compare-fill" style="width:63%"></div></div><b>36%</b></div><div class="compare-row"><span>비교 집단 B</span><div class="compare-track"><div class="compare-fill" style="width:49%"></div></div><b>28%</b></div></div><div class="footnote">n=1,204 · 단위: % · 가중 결과 · 출처와 기준은 가장 아래에</div></div>`;
+    if (kind === 'color') return `<div class="color-board"><div class="swatches"><div class="swatch" style="background:#1f5eff">핵심</div><div class="swatch" style="background:#ef7d3b">비교</div><div class="swatch" style="background:#aeb7c5;color:#273447">맥락</div><div class="swatch" style="background:#d93f4a">경고만</div></div><div class="direct-line"><span>현재 이용</span><div class="line-sample"></div></div><div class="direct-line"><span>향후 의향</span><div class="line-sample secondary"></div></div><div class="direct-line"><span>이탈 위험</span><div class="line-sample warn"></div></div><div class="footnote">색 + 직접 라벨 + 길이 차이로 의미를 중복 전달</div></div>`;
+    if (kind === 'diagram') return `<div class="diagram-board"><svg class="svg-lines" viewBox="0 0 900 540"><defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#122033"/></marker></defs><path d="M240 269 C330 269 360 155 450 140" fill="none" stroke="#122033" stroke-width="4" marker-end="url(#a)"/><path d="M560 140 C650 155 665 269 760 269" fill="none" stroke="#122033" stroke-width="4" marker-end="url(#a)"/><path d="M240 286 C430 390 580 390 760 286" fill="none" stroke="#1f5eff" stroke-width="4" marker-end="url(#a)"/><path d="M460 405 L460 302" fill="none" stroke="#ef7d3b" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#a)"/></svg><div class="d-node cause">정책 경험</div><div class="d-node mediator">신뢰 인식</div><div class="d-node outcome">이용 의향</div><div class="d-node mod">정보 이해도<br><small>조절요인</small></div></div>`;
+    if (kind === 'chart') return `<div class="chart-board"><div class="chart-title">디지털 금융 이용은 40대에서 정점에 이른다</div><div class="c-row"><span>20대</span><div class="c-track"><div class="c-fill" style="width:58%"></div></div><b>42%</b></div><div class="c-row"><span>30대</span><div class="c-track"><div class="c-fill" style="width:78%"></div></div><b>56%</b></div><div class="c-row active"><span>40대</span><div class="c-track"><div class="c-fill" style="width:92%"></div></div><b>66%</b></div><div class="c-row"><span>50대</span><div class="c-track"><div class="c-fill" style="width:69%"></div></div><b>49%</b></div><div class="c-row"><span>60대+</span><div class="c-track"><div class="c-fill" style="width:41%"></div></div><b>29%</b></div><div class="source">단위: % · n=1,204 · 가상 조사자료 · 결측 제외 기준 명시</div></div>`;
+    if (kind === 'report') return `<div class="report-page"><div class="headline">모바일 투자는 중년층까지 확산됐지만 고령층 진입 장벽은 여전하다</div><div class="report-chart"><div style="height:44%"></div><div style="height:69%"></div><div style="height:91%"></div><div style="height:63%"></div><div style="height:34%"></div></div><div class="report-text"></div><div class="report-text"></div><div class="report-text short"></div><div class="report-note">주: 가중 비율, 무응답 제외　자료: 금융생활 가상조사</div></div>`;
+    if (kind === 'workflow') return `<div class="workflow"><div class="step"><b>01</b>질문</div><div class="step-arrow">→</div><div class="step"><b>02</b>초안 생성</div><div class="step-arrow">→</div><div class="step"><b>03</b>눈으로 검토</div><div class="step-arrow">→</div><div class="step"><b>04</b>대화로 수정</div><div class="step-arrow">→</div><div class="step"><b>05</b>SVG·HTML</div></div>`;
+    return `<div class="tool-grid"><div class="tool"><small>STRUCTURE</small><strong>Diagram<br>Studio</strong><span>관계와 흐름을 편집 가능한 도식으로</span></div><div class="tool"><small>QUANTITATIVE</small><strong>Chart<br>Studio</strong><span>축·단위·라벨이 완성된 비교와 추세</span></div><div class="tool"><small>SURVEY</small><strong>Survey<br>Visualization</strong><span>설문 표와 메타를 일관된 차트북으로</span></div></div>`;
+  };
+  (async () => {
+    const data = await fetch('./storyboard.json').then(r => r.json());
+    const requested = new URLSearchParams(location.search).get('scene') || data.scenes[0].id;
+    const index = Math.max(0, data.scenes.findIndex(s => s.id === requested));
+    const scene = data.scenes[index];
+    document.getElementById('app').innerHTML = `<section class="slide"><div class="copy"><div class="eyebrow">${scene.eyebrow}</div><h1>${scene.title}</h1><div class="body">${scene.body}</div><div class="caption">${scene.caption}</div></div><div class="visual">${visual(scene.kind)}</div><div class="brand">PR STUDIO × METHODIQ</div><div class="scene">${String(index + 1).padStart(2,'0')} / ${String(data.scenes.length).padStart(2,'0')}</div></section>`;
+    window.__READY__ = true;
+  })();
+</script>
+</body>
+</html>
