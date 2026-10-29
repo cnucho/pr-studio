@@ -32,11 +32,11 @@ video renderer. No finance application or authentication code was changed here.
 
 ## Honest verification limits
 
-A complete real-time audiovisual watch-through has NOT been verified. Automated
-media checks, timeline checks and extracted-frame inspection are not a substitute
-for listening to pronunciation and judging the complete playback. The Codex file
-open request returned queued; the local media-player launch exposed no controllable
-player window. The MP4 is provided inline for playback and final human review.
+YouTube browser playback was observed from the start through `ended=true` at
+175.761 seconds. Intermediate playback positions and Korean captions were
+checked, and the CI Portal embedded player advanced to the narrated input scene.
+This verifies continuous playback and visible caption/screen progress. It does
+not claim a separate human listening review of pronunciation or voice quality.
 
 ## Repository checks
 
@@ -45,3 +45,20 @@ player window. The MP4 is provided inline for playback and final human review.
 - npm run build: PASS (Next.js 15.5.19; 12 static pages generated).
 
 Generated screenshots, narration, clips and video are excluded from Git.
+
+## Publication and operational verification
+
+- Channel: MethodIQ (`@MethodIQTools`), existing channel selected by the user.
+- Visibility: Unlisted, explicitly approved by the user.
+- Upload terms: explicitly approved at the YouTube upload step.
+- Video: https://www.youtube.com/watch?v=68QNXswrWM8
+- YouTube result: Video published; checks complete, no issues found.
+- Portal: https://ci.methodiq.tools/demos
+- Portal code: `cnucho/ci-portal` commit `fa9d782883763f8c3b1ebd913978225db0e462cf`
+- Railway deployment: `b95f52c8-ff65-46a7-abdb-3fb54276185e`, SUCCESS.
+- Image: `sha256:01e9d1eec50a9b204417f2c3ae032b4accac32f0832005752aa2192e592c7203`
+- Portal health: ok=true; demo page HTTP 200.
+- Portal checks: syntax PASS, 62 tests PASS; existing auth/access regression tests included.
+- Real portal menu -> demo page -> embedded video playback: PASS.
+- Mobile 390px viewport: no horizontal overflow.
+- Existing finance and portal authentication configuration was not changed.
