@@ -31,11 +31,24 @@ Google TTS 키가 없는 로컬에서는 기존 Windows System.Speech를 사용�
 - 운영 앱 ZIP 재다운로드 SHA-256: `15cb1b46f2abcb8f71c75a60548416549f1576400bc98f7afd79619100095685`
 - 재다운로드 파일은 이전 독립 검증의 원본 ZIP과 동일하다.
 
-YouTube 게시·재생 및 CI Portal 연결 결과는 업로드 완료 후 별도 기록한다.
+## 게시 및 운영 재생 확인 — 2026-10-30
+
+- 사용자에게 이번 영상의 약관 동의를 포함한 업로드 승인을 받은 후 게시했다.
+- MethodIQ 채널 일부 공개: https://www.youtube.com/watch?v=FsCTx4uvMp8
+- 운영 안내 페이지: https://ci.methodiq.tools/demos#finance-selection
+- YouTube 게시 완료 및 검사 결과 문제 없음 확인.
+- 실제 YouTube 플레이어에서 212.421초 끝까지 재생 완료, ended=true, 1920×1080 확인.
+- 운영 포털에서도 iframe의 실제 재생 진행과 한글 자막 표시를 확인했다.
+- 포털의 YouTube 주소가 게시 영상과 일치하고, 앱 주소에서 Finance Insight Studio 및 기존 중앙 로그인 안내가 표시됨을 확인했다.
+- 최신 안내를 첫 번째에 추가하고 기존 2분 56초 영상도 유지했다.
+- 포털 구현 커밋: `5f87944331ceaec123edac7d394c356ff8ff5e09`; 운영 배포 `7563caf5-8db5-4d73-9d69-9a6580c77ba1`, SUCCESS.
+- 포털 검사 64/64 PASS, 운영 health 및 demos HTTP 200. 인증 및 운영 변수 변경 없음.
 
 ## 제작 앱 검증
 
 - `npm run lint`: PASS
 - `npm run build`: PASS (12 static pages)
 - 모든 한글 자막의 가로 폭 검증: PASS
-- YouTube 업로드 직전 약관 동의 확인 요청 중. 게시 완료로 기록하지 않는다.
+- YouTube 업로드와 운영 포털 게시·재생 검증 완료.
+
+- 포털 검증기록 최종 커밋: 7b57b6bec0eb49aa795865fd0dc321d5787231ae; 배포 d98d2045-80df-4563-96f8-5c1d97a66d5c SUCCESS. 재배포 후 /health 및 /demos 200, 영상 ID 확인.
