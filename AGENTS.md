@@ -60,3 +60,15 @@ npm run render:video
 - When a screen has low information density, keep the beat short and use it as a bridge rather than stretching narration.
 - Prefer visual focus tools over faster narration: cursor movement, zoom crop, highlight box, dimming, or callout labels should guide attention before the voice explains details.
 - Verification for finished demos should include duration, resolution, file size, a few sampled frames, and at least one watch-through check for speech-screen alignment.
+
+## Demo Artifact Retention
+
+- Manage completed demo deliverables by target app. Do not mix versions from different apps in one undifferentiated output folder.
+- Until a new version has been rendered and verified, keep the existing current version and previous version unchanged.
+- After the new version passes verification, retain only the new current version and the immediately preceding completed version for that app.
+- Intermediate renders, split recordings, temporary captures, clean masters that are not designated deliverables, and exact duplicate copies are not previous versions. Remove them after the completed output has been verified.
+- If the user identifies an artifact as worth long-term preservation, keep it separately with an explicit `ARCHIVE` or `보존본` label and a short preservation reason. Archived artifacts do not count as the current or previous version.
+- Do not infer archival value. The user decides which artifacts receive long-term preservation status.
+- Before physically deleting a superseded artifact, verify the exact target path, confirm that the current and previous completed versions exist and open correctly, and identify whether the file is tracked by Git or stored in an external backup.
+- Do not delete the previous completed version while a new version is still being produced. It may be needed for comparison, rollback, or support during the version upgrade.
+- When a tracked artifact is removed, commit and push the deletion only after verifying that the intended current and previous versions remain available.
