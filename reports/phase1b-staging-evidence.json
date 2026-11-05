@@ -1,0 +1,167 @@
+{
+  "runId": "64d59577-4523-4b16-b4ee-b62618149756",
+  "startedAt": "2026-07-22T04:37:47.421Z",
+  "checks": {
+    "owner_create_project": {
+      "passed": true,
+      "status": 200
+    },
+    "revision_1_persisted": {
+      "passed": true,
+      "status": 200,
+      "hash": "92fdd9e5a6289b3a60accabe6c8b0f43bbbe64c72547568d833f9a0dff05b7c8"
+    },
+    "revision_2_persisted": {
+      "passed": true,
+      "status": 200,
+      "hash": "b29c6cdf0877f5d8ee7656d378db0d2907a3e889e2b8b6800dc8597945ba8295"
+    },
+    "cross_user_project_denied": {
+      "passed": true,
+      "status": 404
+    },
+    "unauthenticated_project_denied": {
+      "passed": true,
+      "status": 401
+    },
+    "revision_update_rejected": {
+      "passed": true,
+      "sqlState": "55000"
+    },
+    "cloud_render_persisted": {
+      "passed": true,
+      "status": 200
+    },
+    "creatomate_submission": {
+      "passed": true,
+      "status": 202
+    },
+    "creatomate_completed": {
+      "passed": true,
+      "observedStates": [
+        "planned",
+        "rendering",
+        "succeeded"
+      ]
+    },
+    "webhook_valid": {
+      "passed": true,
+      "status": 200
+    },
+    "webhook_replay": {
+      "passed": true,
+      "status": 200
+    },
+    "webhook_missing_secret": {
+      "passed": true,
+      "status": 401
+    },
+    "webhook_malformed": {
+      "passed": true,
+      "status": 400
+    },
+    "cloud_ffprobe": {
+      "passed": false,
+      "fileSize": 1140157,
+      "container": "mov,mp4,m4a,3gp,3g2,mj2",
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "videoStreams": 1,
+      "audioStreams": 1,
+      "width": 480,
+      "height": 270,
+      "frameRate": "60/1",
+      "duration": 11.5,
+      "decoded": true,
+      "checksum": "cba29c25945d6bc301f7787f6ef894b841b3df4768f3b8f04db7927ecc8d90c7",
+      "validatedAt": "2026-07-22T04:38:13.557Z",
+      "validatorVersion": "ffprobe-static",
+      "checks": {
+        "nonzero": true,
+        "video": true,
+        "audio": true,
+        "dimensions": false,
+        "duration": true
+      }
+    },
+    "invalid_cloud_approval_rejected": {
+      "passed": true,
+      "status": 400
+    },
+    "local_render_persisted": {
+      "passed": true,
+      "status": 200
+    },
+    "local_ffprobe": {
+      "passed": true,
+      "fileSize": 128669,
+      "container": "mov,mp4,m4a,3gp,3g2,mj2",
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "videoStreams": 1,
+      "audioStreams": 1,
+      "width": 1280,
+      "height": 720,
+      "frameRate": "30/1",
+      "duration": 11.5,
+      "decoded": true,
+      "checksum": "26a43dc7174fe295c95fc0fce889231977501b479b239a0cd387279f6f8a2157",
+      "validatedAt": "2026-07-22T04:38:19.335Z",
+      "validatorVersion": "ffprobe-static",
+      "checks": {
+        "nonzero": true,
+        "video": true,
+        "audio": true,
+        "dimensions": true,
+        "duration": true
+      }
+    },
+    "private_media": {
+      "passed": true,
+      "owner": 200,
+      "other": 404,
+      "anonymous": 401,
+      "length": 128669
+    },
+    "local_approval": {
+      "passed": true,
+      "status": 200
+    },
+    "rejection_render_persisted": {
+      "passed": true,
+      "status": 200
+    },
+    "local_rejection": {
+      "passed": true,
+      "status": 200
+    }
+  },
+  "users": {
+    "a": "fdda2b3e-33a3-4897-8689-0c558a089cba",
+    "b": "1bc2297a-f914-4eed-9b7d-01e02c2039c7"
+  },
+  "projectId": "ee46c866-1b41-47d0-990a-5da71e68c025",
+  "cloudRenderId": "5071834e-6a4d-4aca-9020-40a86aebf900",
+  "creatomateSubmissionShape": {
+    "type": "object",
+    "keys": [
+      "id",
+      "status",
+      "url",
+      "snapshot_url",
+      "template_id",
+      "template_name",
+      "template_tags",
+      "output_format",
+      "modifications",
+      "webhook_url",
+      "metadata"
+    ],
+    "firstKeys": [],
+    "error": null
+  },
+  "providerJobId": "c9e69175-4ad6-41ec-9600-f1a036c20c0c",
+  "localRenderId": "2e017729-55ef-432e-995f-3ccd65f76d7d",
+  "completedAt": "2026-07-22T04:38:34.110Z",
+  "verdict": "OPERATIONAL_RUN_BLOCKED_OUTPUT_VALIDATION"
+}

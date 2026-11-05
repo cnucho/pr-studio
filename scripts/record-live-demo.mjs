@@ -202,6 +202,7 @@ const demos = {
     },
   },
   "press-release": {
+    fitSpeed: true, // generation takes real GPT time; speed footage to fit narration
     url:
       process.env.PR_STUDIO_PRESS_DEMO_URL ??
       process.env.PR_STUDIO_DEMO_URL ??
@@ -226,8 +227,8 @@ const demos = {
       if (await generateBtn.count()) {
         await clickAt(page, generateBtn);
       }
-      await page.getByText("SNS 요약", { exact: true }).waitFor({ timeout: 12000 }).catch(() => {});
-      await page.waitForTimeout(1200);
+      await page.getByText("SNS 요약", { exact: true }).waitFor({ timeout: 45000 }).catch(() => {});
+      await page.waitForTimeout(1500);
 
       for (const label of ["보도자료", "SNS 요약", "언론 대응 포인트"]) {
         await hoverText(page, label, 1600);
@@ -404,6 +405,41 @@ const demos = {
       if (await tab.count()) {
         await clickAt(page, tab);
         await page.waitForTimeout(4000);
+      }
+      const elapsed = (Date.now() - start) / 1000;
+      await exploreFor(page, Math.max(0, (targetSec - elapsed) * 1000));
+    },
+  },
+  "validation": {
+    url: process.env.VALIDATION_DEMO_URL ?? "http://127.0.0.1:4020/",
+    narration:
+      "이 데모는 인사이트 밸리데이트, 분석 결과의 공개 가능성을 검증하는 서버입니다. " +
+      "AI가 만든 분석이 그럴듯해 보여도, 바로 공개할 수 있는지는 다른 문제입니다. " +
+      "화면을 보면, 이 분석에 대해 앱은 출시 판정을 보류로, 상태를 경고로 표시했습니다. " +
+      "분석 자체는 연구질문과 회귀계수, 표준오차, 유의확률, 신뢰구간까지 갖추고 있습니다. 통계정보 포털 만족도와 통계 이해도의 상호작용도 추정돼 있습니다. " +
+      "그런데 검증 영역을 보면, 방법 자료가 부족하고 실행 프로토콜 기록이 누락됐다는 플래그가 떠 있습니다. 표본 수도 이백오십오 대 이백육십으로 어긋납니다. " +
+      "검증 JSON을 열면, 어떤 항목이 왜 걸렸는지가 구조화된 근거로 남습니다. " +
+      "핵심은 이것입니다. 검증은 결과가 그럴듯한지를 보지 않습니다. 결과가 데이터와 방법, 기준과 정합적인지, 그래서 공개해도 되는지를 따로 판정합니다. 그럴듯함과 공개 가능성은 다릅니다.",
+    async interact(page, targetSec) {
+      const start = Date.now();
+      await page.waitForTimeout(3500);
+      // top verdict metrics
+      await hoverText(page, "출시판정", 1800);
+      await hoverText(page, "상태", 1100);
+      await hoverText(page, "플래그", 1100);
+      // analysis: RQ and coefficients
+      await hoverText(page, "분석", 1400);
+      await smoothScroll(page, 280, 3, 600);
+      await hoverText(page, "계수", 1500);
+      // the validation flags (coherence problems)
+      await hoverText(page, "방법자료 부족", 1800);
+      await hoverText(page, "프로토콜 누락", 1500);
+      // expand the structured verdict
+      const vj = page.getByText("검증 JSON", { exact: false }).first();
+      if (await vj.count()) {
+        await clickAt(page, vj);
+        await page.waitForTimeout(2500);
+        await smoothScroll(page, 420, 4, 650);
       }
       const elapsed = (Date.now() - start) / 1000;
       await exploreFor(page, Math.max(0, (targetSec - elapsed) * 1000));
