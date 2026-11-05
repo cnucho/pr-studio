@@ -1,0 +1,153 @@
+{
+  "contractVersion": "question_input_project.v1",
+  "savedAt": "2026-07-25T00:00:00.000Z",
+  "state": {
+    "rows": [
+      {
+        "section": "Interview control",
+        "qid": "interview_consent",
+        "type": "single_choice",
+        "labelEn": "Does the household agree to participate in this survey?",
+        "labelRu": "Согласно ли домохозяйство принять участие в обследовании?",
+        "labelKy": "Үй чарба бул изилдөөгө катышууга макулбу?",
+        "required": true,
+        "choices": [
+          { "value": "yes", "label": "Yes" },
+          { "value": "no", "label": "No" }
+        ],
+        "notes": "Stop the interview when consent is no."
+      },
+      {
+        "section": "Household composition",
+        "qid": "household_size",
+        "type": "integer",
+        "labelEn": "How many people usually live in this household?",
+        "labelRu": "Сколько человек обычно проживает в этом домохозяйстве?",
+        "labelKy": "Бул үй чарбада адатта канча адам жашайт?",
+        "required": true,
+        "min": 1,
+        "max": 30,
+        "validationRule": "min=1,max=30"
+      },
+      {
+        "section": "Household composition",
+        "qid": "household_members",
+        "type": "repeated_table",
+        "labelEn": "Household member roster",
+        "labelRu": "Список членов домохозяйства",
+        "labelKy": "Үй чарба мүчөлөрүнүн тизмеси",
+        "required": true,
+        "repeatedFields": "member_name:text; relationship:single_choice; age:integer; sex:single_choice",
+        "notes": "Create one row for every usual household member."
+      },
+      {
+        "section": "Employment",
+        "qid": "worked_last_7_days",
+        "type": "single_choice",
+        "labelEn": "Did this person work for pay or profit during the last seven days?",
+        "labelRu": "Работал ли этот человек за оплату или прибыль в течение последних семи дней?",
+        "labelKy": "Бул адам акыркы жети күндө акы же пайда үчүн иштедиби?",
+        "required": true,
+        "choices": [
+          { "value": "yes", "label": "Yes" },
+          { "value": "no", "label": "No" }
+        ],
+        "displayIf": "member.age >= 15"
+      },
+      {
+        "section": "Employment",
+        "qid": "main_employment_status",
+        "type": "single_choice",
+        "labelEn": "What was this person's main employment status?",
+        "labelRu": "Каков был основной статус занятости этого человека?",
+        "labelKy": "Бул адамдын негизги иш менен камсыз болуу абалы кандай болгон?",
+        "required": true,
+        "choices": [
+          { "value": "employee", "label": "Employee" },
+          { "value": "employer", "label": "Employer" },
+          { "value": "own_account", "label": "Own-account worker" },
+          { "value": "unpaid_family", "label": "Unpaid family worker" }
+        ],
+        "displayIf": "worked_last_7_days == 'yes'",
+        "logicCards": [
+          {
+            "kind": "show_if",
+            "expression": "worked_last_7_days == 'yes'",
+            "targetQid": "main_employment_status"
+          }
+        ]
+      },
+      {
+        "section": "Employment",
+        "qid": "seeking_work_last_4_weeks",
+        "type": "single_choice",
+        "labelEn": "Did this person actively seek work during the last four weeks?",
+        "labelRu": "Искал ли этот человек активно работу в течение последних четырех недель?",
+        "labelKy": "Бул адам акыркы төрт жумада жигердүү жумуш издедиби?",
+        "required": true,
+        "choices": [
+          { "value": "yes", "label": "Yes" },
+          { "value": "no", "label": "No" }
+        ],
+        "displayIf": "worked_last_7_days == 'no'"
+      },
+      {
+        "section": "Housing and services",
+        "qid": "main_drinking_water_source",
+        "type": "single_choice",
+        "labelEn": "What is the household's main source of drinking water?",
+        "labelRu": "Каков основной источник питьевой воды домохозяйства?",
+        "labelKy": "Үй чарбанын ичүүчү суунун негизги булагы кайсы?",
+        "required": true,
+        "choices": [
+          { "value": "piped_dwelling", "label": "Piped into dwelling" },
+          { "value": "public_tap", "label": "Public tap" },
+          { "value": "protected_well", "label": "Protected well" },
+          { "value": "surface_water", "label": "Surface water" },
+          { "value": "other", "label": "Other" }
+        ]
+      },
+      {
+        "section": "Housing and services",
+        "qid": "water_collection_minutes",
+        "type": "integer",
+        "labelEn": "How many minutes does a round trip to collect drinking water take?",
+        "labelRu": "Сколько минут занимает путь за питьевой водой туда и обратно?",
+        "labelKy": "Ичүүчү суу алып келүүгө барып-кайтууга канча мүнөт кетет?",
+        "required": false,
+        "min": 0,
+        "max": 240,
+        "displayIf": "main_drinking_water_source != 'piped_dwelling'"
+      },
+      {
+        "section": "Housing and services",
+        "qid": "electricity_access",
+        "type": "single_choice",
+        "labelEn": "Does the dwelling have access to electricity?",
+        "labelRu": "Имеет ли жилище доступ к электроэнергии?",
+        "labelKy": "Турак жайда электр энергиясы барбы?",
+        "required": true,
+        "choices": [
+          { "value": "yes", "label": "Yes" },
+          { "value": "no", "label": "No" }
+        ]
+      },
+      {
+        "section": "Housing and services",
+        "qid": "sanitation_type",
+        "type": "single_choice",
+        "labelEn": "What type of sanitation facility does the household mainly use?",
+        "labelRu": "Какой тип санитарного устройства в основном использует домохозяйство?",
+        "labelKy": "Үй чарба негизинен кандай санитардык жайды колдонот?",
+        "required": true,
+        "choices": [
+          { "value": "flush_sewer", "label": "Flush to sewer" },
+          { "value": "septic", "label": "Septic tank" },
+          { "value": "improved_pit", "label": "Improved pit latrine" },
+          { "value": "unimproved", "label": "Unimproved facility" },
+          { "value": "none", "label": "No facility" }
+        ]
+      }
+    ]
+  }
+}
