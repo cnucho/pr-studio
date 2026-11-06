@@ -3,6 +3,32 @@
 ## Voice Rendering
 
 - This repo uses Google Cloud Text-to-Speech as the preferred narration provider for demo and tutorial videos.
+- **Credential source of truth:** the working Google TTS service-account credential is stored in Railway project `pr-studio`, environment `staging`, service `pr-studio-staging`, variable `GOOGLE_SERVICE_ACCOUNT_JSON`. The absence of `C:\secure\pr-studio-google-tts.json` or a local `GOOGLE_APPLICATION_CREDENTIALS` value does **not** mean that the Google voice configuration was lost.
+- Before reporting that Google TTS is unavailable, check the linked Railway staging service and confirm that `GOOGLE_SERVICE_ACCOUNT_JSON` exists. Do not search the entire disk first, do not ask the user to recreate credentials, and do not silently downgrade to another voice provider.
+- The canonical Railway identifiers are:
+  - project `pr-studio`: `0056bba0-35b8-491a-b335-b931d754ce34`
+  - environment `staging`: `5546a096-fd0a-4997-bec9-a1174df6f506`
+  - service `pr-studio-staging`: `40caf20a-50bf-463b-ad05-cab69af271ca`
+- Link the local workspace when needed:
+
+```powershell
+railway link -p 0056bba0-35b8-491a-b335-b931d754ce34 -e 5546a096-fd0a-4997-bec9-a1174df6f506 -s 40caf20a-50bf-463b-ad05-cab69af271ca
+```
+
+- Load the credential only into the current rendering process. Never print, log, save, or commit its value:
+
+```powershell
+$prStudioVars = railway variables --json | ConvertFrom-Json
+$env:GOOGLE_SERVICE_ACCOUNT_JSON = $prStudioVars.GOOGLE_SERVICE_ACCOUNT_JSON
+$env:PR_STUDIO_TTS_PROVIDER_KO = "google"
+$env:GOOGLE_TTS_VOICE_KO = "ko-KR-Chirp3-HD-Kore"
+$env:GOOGLE_TTS_SPEAKING_RATE = "0.94"
+npm run render:auto-behavior-atlas-demo
+Remove-Item Env:GOOGLE_SERVICE_ACCOUNT_JSON -ErrorAction SilentlyContinue
+```
+
+- A staging value such as `PR_STUDIO_TTS_PROVIDER_KO=openai` is not authoritative for a user-requested Google narration job. For that job, explicitly set the current process to `google` while leaving the Railway service configuration unchanged.
+- Rendering is not complete unless `render-report.json` records `narrationProvider: google` and the generated audio/video passes `ffprobe` verification.
 - The local service account key should live outside the repo at `C:\secure\pr-studio-google-tts.json`.
 - Never commit the Google service account JSON file, downloaded credentials, generated audio, generated clips, or rendered videos.
 - `scripts/synthesize-speech.mjs` auto-detects `C:\secure\pr-studio-google-tts.json` and falls back in this order: Google TTS, ElevenLabs, OpenAI TTS, Windows `System.Speech`.

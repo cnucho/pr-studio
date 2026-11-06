@@ -11,6 +11,7 @@
     "render:video": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-final-video.ps1",
     "render:correction-demo": "node scripts/render-correction-level-agent-demo.mjs",
     "render:car-meta-hub-demo": "node scripts/render-car-meta-hub-review-demo.mjs",
+    "render:auto-behavior-atlas-demo": "node scripts/render-auto-behavior-atlas-demo.mjs",
     "render:academy:premium": "node scripts/render-premium-academy-demo.mjs",
     "worker:video": "tsx scripts/video-agent-worker.ts",
     "worker:video:once": "tsx scripts/video-agent-worker.ts --once",
