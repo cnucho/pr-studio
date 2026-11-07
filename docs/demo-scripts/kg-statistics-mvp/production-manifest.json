@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "kg_statistics_demo_production_manifest.v1",
+  "projectId": "kg-statistics-mvp-demo",
+  "title": "KG Statistics Production System MVP — From Survey Design to a Verified Official Release",
+  "sourceApplication": {
+    "repository": "cnucho/survey-workflow-orchestrator",
+    "branch": "codex/kg-mvp-golden-path",
+    "minimumVerifiedCommit": "dcdc406dcb004433438753285b2873974755ca49"
+  },
+  "productionRepository": {
+    "repository": "cnucho/pr-studio",
+    "branch": "codex/kg-statistics-demo-production"
+  },
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "aspectRatio": "16:9",
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "targetDurationSeconds": {
+      "minimum": 1440,
+      "maximum": 1800
+    }
+  },
+  "audio": {
+    "language": "en",
+    "preferredProvider": "openai",
+    "preferredVoice": "cedar",
+    "style": "calm official product demonstration"
+  },
+  "subtitles": [
+    {
+      "language": "en",
+      "source": "docs/demo-scripts/kg-statistics-mvp/subtitles-en.md",
+      "outputs": [
+        "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-en.srt",
+        "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-en.vtt"
+      ]
+    },
+    {
+      "language": "ky",
+      "source": "docs/demo-scripts/kg-statistics-mvp/subtitles-ky.md",
+      "outputs": [
+        "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-ky.srt",
+        "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-ky.vtt"
+      ]
+    }
+  ],
+  "scenario": {
+    "projectTitle": "Household Living Conditions Survey 2026",
+    "objective": "Measure household composition, employment, and access to basic services.",
+    "publicationTitle": "Household Living Conditions Indicators 2026",
+    "dataPolicy": "fictional aggregate data only; no respondent-level personal data"
+  },
+  "sequence": [
+    { "order": 1, "id": "slide-01-opening", "type": "slide", "targetSeconds": 50 },
+    { "order": 2, "id": "video-01-login", "type": "recorded_app", "targetSeconds": 58 },
+    { "order": 3, "id": "slide-02-evidence", "type": "slide", "targetSeconds": 68 },
+    { "order": 4, "id": "video-02-project-access", "type": "recorded_app", "targetSeconds": 88 },
+    { "order": 5, "id": "slide-03-questionnaire-artifact", "type": "slide", "targetSeconds": 58 },
+    { "order": 6, "id": "video-03-questionnaire-submit", "type": "recorded_app", "targetSeconds": 95 },
+    { "order": 7, "id": "slide-04-separation", "type": "slide", "targetSeconds": 62 },
+    { "order": 8, "id": "video-04-questionnaire-approval", "type": "recorded_app", "targetSeconds": 82 },
+    { "order": 9, "id": "slide-05-collection", "type": "slide", "targetSeconds": 62 },
+    { "order": 10, "id": "video-05-collection-sync", "type": "recorded_app", "targetSeconds": 115 },
+    { "order": 11, "id": "slide-06-lineage", "type": "slide", "targetSeconds": 68 },
+    { "order": 12, "id": "video-06-cleaning-analysis", "type": "recorded_app", "targetSeconds": 128 },
+    { "order": 13, "id": "slide-07-verification", "type": "slide", "targetSeconds": 62 },
+    { "order": 14, "id": "video-07-independent-verification", "type": "recorded_app", "targetSeconds": 95 },
+    { "order": 15, "id": "slide-08-publication-governance", "type": "slide", "targetSeconds": 58 },
+    { "order": 16, "id": "video-08-approval-export-intent", "type": "recorded_app", "targetSeconds": 95 },
+    { "order": 17, "id": "slide-09-atomic-release", "type": "slide", "targetSeconds": 68 },
+    { "order": 18, "id": "video-09-release-generation", "type": "recorded_app", "targetSeconds": 115 },
+    { "order": 19, "id": "slide-10-integrity-recovery", "type": "slide", "targetSeconds": 68 },
+    { "order": 20, "id": "video-10-download-recovery", "type": "recorded_app", "targetSeconds": 118 },
+    { "order": 21, "id": "slide-11-closing", "type": "slide", "targetSeconds": 82 }
+  ],
+  "masterOutputs": {
+    "video": "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-master.mp4",
+    "slidesPdf": "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-slides.pdf",
+    "slidesPptx": "out/kg-statistics-mvp-demo/kg-statistics-mvp-demo-slides.pptx",
+    "verification": "out/kg-statistics-mvp-demo/verification-report.json"
+  },
+  "constraints": {
+    "burnSubtitlesIntoMaster": false,
+    "exposeCredentials": false,
+    "exposeTokens": false,
+    "exposeRawRespondentRows": false,
+    "exposeFilesystemPaths": false,
+    "useRealRunningApplication": true,
+    "useSampleReleaseFallback": false,
+    "modifyTargetProductionSecurity": false
+  }
+}
