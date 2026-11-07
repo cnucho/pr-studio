@@ -58,4 +58,9 @@ npm run dev
 
 ## 원격 repo
 
+게시된 외부 앱 영상의 링크와 업로드 경로는
+[`docs/demo-scripts/ott-forecast/README.md`](docs/demo-scripts/ott-forecast/README.md)에
+기록합니다. 이 사례의 실제 업로드는 YouTube Studio에서 수행했으며 PR Studio의
+Google 음성 제작 단계와 구분합니다.
+
 원격 저장소: https://github.com/cnucho/pr-studio
