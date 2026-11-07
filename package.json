@@ -21,6 +21,7 @@
     "worker:video:once": "tsx scripts/video-agent-worker.ts --once",
     "capture:video:v2": "node scripts/capture-video-v2.mjs",
     "render:video:v2": "node scripts/render-video-v2.mjs",
+    "render:text-analysis-copilot-demo": "node scripts/render-text-analysis-copilot-demo.mjs",
     "review:video:v2": "node scripts/review-video-v2.mjs",
     "smoke:video:collection": "tsx scripts/smoke-video-collection.ts",
     "smoke:video:production": "tsx scripts/smoke-video-production.ts",
