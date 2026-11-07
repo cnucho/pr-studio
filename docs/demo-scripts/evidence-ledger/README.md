@@ -43,3 +43,12 @@ The live search ranking can change. The capture deliberately stops if its select
 - `out/evidence-ledger/01-introduction.mp4`, `.srt`, and transcript.
 - `out/evidence-ledger/02-usage-demo.mp4`, `.srt`, and transcript.
 - `out/evidence-ledger/live-search-receipt.json` and UI capture images.
+
+## Publication (2026-11-07)
+
+- Part 1, introduction: https://youtu.be/NwXvDYLMIpg (unlisted, 1:01).
+- Part 2, usage demo: https://youtu.be/FZNyzxsl9JE (unlisted, 1:25).
+- Both were rendered from this PR Studio package with Google TTS and uploaded through the MethodIQ YouTube Studio browser; PR Studio does not currently have an in-app YouTube uploader. Korean SRT captions were uploaded separately and published.
+- CI Portal demo entries: https://ci.methodiq.tools/demos#evidence-ledger-introduction and https://ci.methodiq.tools/demos#evidence-ledger-usage-demo.
+- The Crossref run was partial metadata discovery (five hits, four unique, one duplicate); one irrelevant result was excluded. It does not establish complete coverage or verify that the source supports a substantive claim. The cited 2023 study is not a measurement of today's ChatGPT or Evidence Ledger.
+- Rendered MP4s and search receipts remain in ignored `out/evidence-ledger/`; do not commit them.
