@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,7 +41,15 @@ if (!playwright) {
   throw new Error("Playwright를 찾을 수 없습니다.");
 }
 
-const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const chromeCandidates = [
+  process.env.CHROME_PATH,
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+  "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/google-chrome",
+].filter(Boolean);
+const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
 
 const academy = {
   nameKo: "오름입시학원",
@@ -602,7 +611,7 @@ async function ensureDirs() {
 async function renderScreens(slides, { vertical, prefix }) {
   const browser = await playwright.chromium.launch({
     headless: true,
-    executablePath: chromePath,
+    ...(chromePath ? { executablePath: chromePath } : {}),
     args: ["--disable-dev-shm-usage", "--font-render-hinting=none"],
   });
 

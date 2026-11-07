@@ -37,6 +37,18 @@ PR Studio는 보도자료, 뉴스 분석, 영상 기획, AI 글쓰기, 타겟팅
 - 음성 설정은 `PR_STUDIO_TTS_PROVIDER`, `PR_STUDIO_TTS_PROVIDER_KO`, `PR_STUDIO_TTS_PROVIDER_EN`, `GOOGLE_TTS_VOICE_KO`, `GOOGLE_TTS_VOICE_EN`, `GOOGLE_TTS_SPEAKING_RATE`, `GOOGLE_TTS_INPUT_MODE`, `PR_STUDIO_TTS_MODEL`, `PR_STUDIO_TTS_VOICE_KO`, `PR_STUDIO_TTS_VOICE_EN`, `PR_STUDIO_TTS_INSTRUCTIONS`, `ELEVENLABS_VOICE_ID_KO`, `ELEVENLABS_VOICE_ID_EN`으로 조정할 수 있습니다.
 - 완성 파일은 `out/pr-studio-final.mp4`에 저장되고 앱 안에서 바로 재생하거나 다운로드할 수 있습니다.
 
+## Railway + Supabase 배포형 영상 생성
+
+Railway처럼 웹 요청 안에서 긴 렌더링을 실행하기 부담스러운 환경에서는 영상 생성을 queue/worker 방식으로 실행합니다.
+
+- 먼저 `supabase/migrations/202607220001_video_agent_queue.sql`을 Supabase에 적용합니다.
+- 웹/worker 공통 환경변수: `VIDEO_AGENT_EXECUTION=queue`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
+- 선택 환경변수: `VIDEO_AGENT_STORAGE_BUCKET=video-agent-results`, `VIDEO_AGENT_WORKER_POLL_MS=5000`
+- worker 서비스 시작 명령: `npm run worker:video`
+- 컨테이너에는 `Dockerfile`을 통해 `chromium`, `ffmpeg`, `fonts-noto-cjk`가 설치됩니다.
+
+이 구조에서는 작업 상태와 재시도 정보가 Supabase Postgres에, 완성 MP4가 비공개 Supabase Storage 버킷에 저장됩니다. 여러 worker는 `FOR UPDATE SKIP LOCKED` 기반 RPC로 작업을 원자적으로 선점하며, 중단된 작업은 20분 뒤 다시 선점할 수 있습니다. secret key는 브라우저에 노출하지 말고 웹/worker 서버 환경변수에만 설정합니다.
+
 ## 실행
 
 ```bash

@@ -161,7 +161,7 @@ function extractResponseText(data: unknown) {
   );
 }
 
-async function createGptPlan(brief: string): Promise<VideoAgentPlan> {
+export async function createVideoAgentPlan(brief: string): Promise<VideoAgentPlan> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return fallbackPlan("OPENAI_API_KEY가 없어 로컬 플래너로 실행했습니다.");
@@ -303,7 +303,7 @@ export async function runVideoAgent({
   brief: string;
   appUrl: string;
 }): Promise<VideoAgentResult> {
-  const plan = await createGptPlan(brief);
+  const plan = await createVideoAgentPlan(brief);
   const runSteps: VideoAgentRunStep[] = [];
   const env = {
     ...process.env,
