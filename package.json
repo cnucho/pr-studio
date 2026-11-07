@@ -14,6 +14,7 @@
     "render:auto-behavior-atlas-demo": "node scripts/render-auto-behavior-atlas-demo.mjs",
     "render:survey-quality-persona-demo": "node scripts/render-survey-quality-persona-pilot-demo.mjs",
     "render:office-ai-workflow-demo": "node scripts/render-office-ai-workflow-demo.mjs",
+    "render:questionnaire-recovery-demo": "node scripts/render-questionnaire-recovery-demo.mjs",
     "render:academy:premium": "node scripts/render-premium-academy-demo.mjs",
     "worker:video": "tsx scripts/video-agent-worker.ts",
     "worker:video:once": "tsx scripts/video-agent-worker.ts --once",
