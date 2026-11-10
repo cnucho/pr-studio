@@ -5,9 +5,9 @@
   "sourceUrl": "https://forecast-web-production.up.railway.app/",
   "beats": [
     {
-      "kind": "capture",
-      "capture": "home",
+      "kind": "slide",
       "title": "1. 새 자료 전달",
+      "visual": "현재 형식의 엑셀\\n앱 · 대화 · 메일 · 전용 MCP\\n모두 같은 수신 파이프라인",
       "narration": "매주 현재 형식의 엑셀을 앱에서 올립니다. 같은 파일은 대화창, 메일, 전용 MCP로 전달해도 동일한 수신 파이프라인과 중복 방지 규칙으로 처리됩니다.",
       "subtitle": "1. 엑셀을 앱·대화·메일·MCP로 전달",
       "minSeconds": 10
