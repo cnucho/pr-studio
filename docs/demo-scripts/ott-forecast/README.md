@@ -1,46 +1,50 @@
-# OTT viewing forecast videos: publication handoff
+# OTT viewing forecast demos
 
-Published on 2026-11-07 to the MethodIQ YouTube channel as unlisted videos.
-These are live links; do not upload the same files again just to create a
-PR Studio publication record.
+PR Studio owns the current two-part Korean demo package for the OTT viewing
+forecast Beta app.
 
-| Part | YouTube | CI Portal demo |
-| --- | --- | --- |
-| 1. Forecast snippet and changes | https://www.youtube.com/watch?v=I6_JAs_qSh8 | https://ci.methodiq.tools/demos#ott-forecast-intro-part-1 |
-| 2. Research-team operation | https://www.youtube.com/watch?v=x1HSqwENA-g | https://ci.methodiq.tools/demos#ott-forecast-intro-part-2 |
+- Live app: https://forecast-web-production.up.railway.app/
+- CI Portal demo page: https://ci.methodiq.tools/demos
+- Stable media release tag: `ott-forecast-demo-20261111`
+- Renderer: `render.py`
+- Part 1 manifest: `intro.json`
+- Part 2 manifest: `tutorial.json`
 
-The trial app is at https://forecast-web-production.up.railway.app/ and is
-registered in the CI Portal admin ledger as an admin-only Alpha APP and MCP.
-The demo page does not grant app access. Survey-feed ingestion and customer
-dashboard delivery remain unconnected; part 1 uses fictional example values.
+## Current story
 
-## Production and upload boundary
+Part 1 explains the product boundary: the weekly dashboard workbook is converted
+into current post-launch week 1, 2, and 3 viewing-experience forecasts; forecast
+uncertainty is shown; baseline, Ridge, histogram gradient boosting, and CatBoost
+are compared; new actuals feed error learning; and daily YouTube evidence is
+used to draft change explanations. The on-screen responsibility statement is
+`수행: Consumer Insight 연구분석팀` and `방법론 책임: 김양혁`.
 
-- The source plan and renderer are in
-  `cnucho/ott-viewing-forecast`, commit
-  `6e0055ba875fd8dac1f8cd6bdf42255e62246bcf`, at
-  `docs/intro-video-plan-ko.md` and `scripts/render-intro-videos.mjs`.
-- The OTT renderer used PR Studio's `scripts/synthesize-speech.mjs` for Google
-  Cloud TTS, with Korean male voice `ko-KR-Chirp3-HD-Algieba`. Each MP4 has
-  burned-in Korean captions and a separate Korean SRT.
-- Upload and visibility selection were performed in the authenticated YouTube
-  Studio browser, **not** by a PR Studio YouTube-upload function. The current
-  PR Studio YouTube kit prepares content and metadata; it does not publish a
-  video to the account. Do not describe this upload as an in-app PR Studio
-  publication.
-- Both uploads completed without a YouTube copyright-check issue. The watch
-  pages showed the unlisted state and a 1080p quality option. These checks do
-  not establish that YouTube preserved the original encoded bytes.
+Part 2 shows the weekly operating flow: submit the existing Excel format through
+the app, conversation, email, or the dedicated MCP; review forecast/actual
+snippets and method performance; edit the shared YouTube brief; and control
+publication and forecast export with the designated operator/admin roles.
 
-## Local source-file receipt
+## Build and verification
 
-Generated media are deliberately excluded from Git. At handoff the files were
-under `D:\Worktrees\active\ott-viewing-forecast\initial-model-20261107\runs\intro-videos\`.
+The GitHub workflow `render-ott-forecast-demos.yml` captures the live Beta
+screens, renders Korean narration and burned-in captions, decodes both MP4 files
+with ffmpeg, stores review artifacts, and publishes stable release assets.
+Generated MP4, audio, screenshots, SRT, transcript, and receipt files remain
+outside Git.
 
-| File | Bytes | SHA-256 |
-| --- | ---: | --- |
-| `ott-forecast-intro-part-1.mp4` | 1,532,650 | `8F1F0D8499C17CC5182523B686F002B5AE9C16536AD31BBC13611D2662C4B42D` |
-| `ott-forecast-intro-part-2.mp4` | 1,632,786 | `5AC5FD4D7D01C22BCCAB650CF36B0BBAAE5A06047CB214E4D1BACBD85A66E5FE` |
+Run locally where ffmpeg, Playwright, Pillow, edge-tts, and Korean Noto fonts are
+available:
 
-CI Portal demo entry: `cnucho/ci-portal` main commit
-`342b61002b5c14b6fc4a6456dfa944a1aa62615e`.
+```bash
+python docs/demo-scripts/ott-forecast/render.py both
+```
+
+The release receipt records duration, dimensions, SHA-256, narration voice,
+source URL, and captured live screens. CI Portal embeds the stable release MP4s
+and does not grant product-app access.
+
+## Superseded 2026-11-07 YouTube demos
+
+The earlier unlisted videos `I6_JAs_qSh8` and `x1HSqwENA-g` describe the old
++1/+2-week trial and are retained only as history. They must not be presented as
+the current workflow.
