@@ -66,7 +66,6 @@ def wrap(draw, value, selected_font, max_width):
 def capture_live(source_url):
     CAPTURES.mkdir(parents=True, exist_ok=True)
     routes = {
-        "home": "/",
         "snippets": "/snippets",
         "methods": "/methods",
     }
