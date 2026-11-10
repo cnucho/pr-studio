@@ -1,0 +1,56 @@
+{
+  "id": "ott-forecast-part-1",
+  "title": "OTT 시청경험률 예측기 1부: 역할과 예측 결과",
+  "partLabel": "1부 · 역할과 결과",
+  "sourceUrl": "https://forecast-web-production.up.railway.app/",
+  "beats": [
+    {
+      "kind": "slide",
+      "title": "예측기의 역할",
+      "visual": "매주 받은 대시보드 엑셀을\n공개 후 1·2·3주 예측으로",
+      "narration": "OTT 시청경험률 예측기는 매주 대시보드 엑셀을 받아, 작품별 공개 후 일 주차, 이 주차, 삼 주차 시청경험률을 함께 예측합니다.",
+      "subtitle": "대시보드 엑셀 → 공개 후 1·2·3주 예측",
+      "minSeconds": 7
+    },
+    {
+      "kind": "capture",
+      "capture": "snippets",
+      "title": "현재 예측 스니펫",
+      "narration": "독자 화면은 과거 예측 이력을 늘어놓지 않습니다. 현재 관측값과 공개 후 일, 이, 삼 주차 예측, 실제값, 불확실성 범위를 작품별 스니펫으로 보여 줍니다.",
+      "subtitle": "현재 관측값과 공개 후 1·2·3주 예측",
+      "minSeconds": 9
+    },
+    {
+      "kind": "slide",
+      "title": "예측 방법",
+      "visual": "기준선 · Ridge · HGB · CatBoost\n주차별 검증 성과로 자동 선택",
+      "narration": "기준선, 릿지, 히스토그램 그래디언트 부스팅, 캣부스트를 같은 기준으로 비교하고, 각 목표 주차의 검증 오차가 가장 낮은 방법을 선택합니다.",
+      "subtitle": "주차별 검증 성과로 최적 방법 선택",
+      "minSeconds": 9
+    },
+    {
+      "kind": "capture",
+      "capture": "methods",
+      "title": "방법론과 성과",
+      "narration": "방법론 페이지에는 선택 이유, 홀드아웃 평균 절대 오차와 기준선 대비 개선, 예측 오차의 다음 학습 반영, 매주 실험 이력이 함께 기록됩니다.",
+      "subtitle": "성과·선택 이유·오차 재학습을 공개",
+      "minSeconds": 10
+    },
+    {
+      "kind": "slide",
+      "title": "변화 설명",
+      "visual": "예측치 급변 감지\n↓\n유튜브 1일 1회 검색\n↓\n근거 기반 설명문",
+      "narration": "예측치가 크게 변하면 유튜브 공개 검색을 하루 한 번 수행합니다. 검색 결과와 공개 반응을 근거로 변동 가능성을 설명하는 글을 작성하고 편집할 수 있습니다.",
+      "subtitle": "급변 시 유튜브 근거로 설명문 작성",
+      "minSeconds": 9
+    },
+    {
+      "kind": "slide",
+      "title": "불확실성과 책임",
+      "visual": "예측 범위 표시 · 매주 갱신\n수행  Consumer Insight 연구분석팀\n방법론 책임  김양혁",
+      "narration": "예측치는 오차 범위와 함께 제시되며 매주 새 자료와 실제값으로 갱신됩니다. 수행은 Consumer Insight 연구분석팀, 방법론 책임은 김양혁으로 명시합니다.",
+      "subtitle": "불확실성 표시와 책임 주체 명시",
+      "minSeconds": 10
+    }
+  ]
+}

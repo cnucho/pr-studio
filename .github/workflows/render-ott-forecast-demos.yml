@@ -1,0 +1,67 @@
+name: Render OTT forecast demos
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/demo-scripts/ott-forecast/**"
+      - ".github/workflows/render-ott-forecast-demos.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/demo-scripts/ott-forecast/**"
+      - ".github/workflows/render-ott-forecast-demos.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
+      - name: Verify PR Studio application
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+      - name: Install renderer dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pillow playwright edge-tts
+          python -m playwright install --with-deps chromium
+      - name: Render both Korean demos
+        run: python docs/demo-scripts/ott-forecast/render.py both
+      - name: Verify MP4 metadata and decode
+        run: |
+          for video in out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4; do
+            ffprobe -v error -show_entries stream=codec_name,width,height -show_entries format=duration,size -of json "$video"
+            ffmpeg -v error -i "$video" -f null -
+          done
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ott-forecast-demo-v2
+          path: |
+            out/ott-forecast-v2/ott-forecast-part-1.mp4
+            out/ott-forecast-v2/ott-forecast-part-2.mp4
+            out/ott-forecast-v2/*.srt
+            out/ott-forecast-v2/*-transcript.txt
+            out/ott-forecast-v2/*-receipt.json
+          if-no-files-found: error
+      - name: Publish stable release assets
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="ott-forecast-demo-20261111"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --clobber
+          else
+            gh release create "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --title "OTT 시청경험률 예측기 데모 v2" --notes "PR Studio가 2026-11-11 운영 Beta 화면을 캡처해 제작한 2부 데모입니다."
+          fi
