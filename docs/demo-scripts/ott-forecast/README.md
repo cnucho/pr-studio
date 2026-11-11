@@ -5,7 +5,7 @@ forecast Beta app.
 
 - Live app: https://forecast-web-production.up.railway.app/
 - CI Portal demo page: https://ci.methodiq.tools/demos
-- Stable media release tag: `ott-forecast-demo-20261111-v3`
+- Stable media release tag: `ott-forecast-demo-20261112-v4`
 - Renderer: `render.py`
 - Part 1 manifest: `intro.json`
 - Part 2 manifest: `tutorial.json`
@@ -25,7 +25,9 @@ used to draft change explanations. The on-screen responsibility statement is
 Part 2 shows the weekly operating flow: submit the existing Excel format through
 the app, conversation, email, or the dedicated MCP; review forecast/actual
 snippets, the fixed week-two grade guide, method performance, and the historical
-forecast-versus-actual Viewer; edit the shared YouTube brief; and control
+forecast-versus-actual Viewer; manage daily external-signal collection and historical recovery;
+run the weekly AI review in the connected conversation, add collection instructions when needed;
+edit the shared YouTube brief; and control
 publication and forecast export with the designated operator/admin roles.
 
 ## Build and verification
@@ -50,7 +52,23 @@ records HTTP status, required visible text, published schema/grade counts,
 authentication boundaries, console errors, and screenshot paths. CI Portal embeds the stable release MP4s
 and does not grant product-app access.
 
-## Verified v3 receipt
+## v4 additions
+
+The v4 package adds the internal admin signal collector, daily code collection,
+historical YouTube reaction recovery, weekly conversation-based AI analysis, and
+AI-issued follow-up collection instructions. The signal page remains protected;
+local authenticated-equivalent capture is used for the review build and CI falls
+back to an explicit workflow slide when credentials are unavailable.
+
+The 2026-11-12 review build completed without browser console or page errors.
+Part 1 is 143.835 seconds at 1280×720 (SHA-256
+`4a75a0a6341a2af3a655c31d5bd5812e340bdb67953781dfdabc3cd0933d2bd3`).
+Part 2 is 138.523 seconds at 1280×720 (SHA-256
+`9bbb3a4ae2f2c77d409f66f30e12becb2e76f27d9c088a10bfc3f988c065ca3e`).
+Both H.264/AAC files passed full ffmpeg decode verification; Part 2 includes the
+actual signal-collector screen with recovery and validation metrics.
+
+## Previous verified v3 receipt
 
 The 2026-11-11 live-screen run completed with no browser console or page errors.
 Part 1 is 123.363 seconds at 1280×720 (SHA-256 `c0c1e51f4cc41862713ab03fecba51bf5582e9b7307924e167db5b9bfc856dea`).

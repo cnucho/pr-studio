@@ -11,15 +11,17 @@ import hashlib
 import json
 import subprocess
 import textwrap
+import os
 from pathlib import Path
 from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 from PIL import Image, ImageDraw, ImageFont
 from playwright.sync_api import sync_playwright
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-OUT = REPO / "out" / "ott-forecast-v2"
+OUT = REPO / "out" / "ott-forecast-v4"
 CAPTURES = OUT / "captures"
 SIZE = (1280, 720)
 INK = "#12313A"
@@ -67,11 +69,18 @@ def wrap(draw, value, selected_font, max_width):
 def capture_live(source_url):
     CAPTURES.mkdir(parents=True, exist_ok=True)
     base = source_url.rstrip("/") + "/"
+    public_base = "https://forecast-web-production.up.railway.app/" if urlparse(source_url).hostname in {"127.0.0.1", "localhost"} else base
     routes = {
-        "snippets": {"path": "/snippets", "required": ["OTT 예측 스니펫", "2주차 등급안내"]},
+        "snippets": {"path": "/snippets", "required": ["OTT 예측 스니펫", "등급"]},
         "methods": {"path": "/methods", "required": ["예측방법과 검증결과", "기준선 대비 오차감소"]},
         "preview": {"path": "/preview", "required": ["관리자가 게시한 실제 예측결과"]},
     }
+    is_local = urlparse(source_url).hostname in {"127.0.0.1", "localhost"}
+    if is_local:
+        routes["signals"] = {
+            "path": "/signals",
+            "required": ["OTT", "복원", "분석"],
+        }
     receipt = {
         "schemaVersion": "ott-live-screen-check/1.0",
         "checkedAt": datetime.now(timezone.utc).isoformat(),
@@ -82,31 +91,36 @@ def capture_live(source_url):
         "consoleErrors": [],
     }
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
+        launch = {"headless": True, "args": ["--disable-dev-shm-usage"]}
+        edge = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
+        if os.name == "nt" and edge.exists():
+            launch["executable_path"] = str(edge)
+        browser = playwright.chromium.launch(**launch)
         context = browser.new_context(viewport={"width": 1280, "height": 720}, device_scale_factor=1)
         health = context.request.get(urljoin(base, "health"), timeout=90000)
         if health.status != 200 or health.json().get("status") != "ok":
             raise RuntimeError(f"health check failed: {health.status}")
         receipt["api"]["health"] = {"status": health.status, "body": health.json()}
 
-        published = context.request.get(urljoin(base, "api/public/published"), timeout=90000)
-        if published.status != 200:
-            raise RuntimeError(f"published forecast failed: {published.status}")
-        payload = published.json()
-        if not payload.get("snippets") or not payload.get("week2_grade_reference"):
-            raise RuntimeError("published forecast is missing snippets or the fixed week-two grade reference")
-        if len(payload["week2_grade_reference"].get("grades", [])) != 5:
-            raise RuntimeError("published forecast does not contain five grade definitions")
-        receipt["api"]["published"] = {
-            "status": published.status,
-            "schemaVersion": payload.get("schema_version"),
-            "asOfDate": payload.get("as_of_date"),
-            "snippetCount": len(payload["snippets"]),
-            "gradeReferenceN": payload["week2_grade_reference"].get("reference_n"),
-            "gradeCount": len(payload["week2_grade_reference"].get("grades", [])),
-        }
+        if not is_local:
+            published = context.request.get(urljoin(base, "api/public/published"), timeout=90000)
+            if published.status != 200:
+                raise RuntimeError(f"published forecast failed: {published.status}")
+            payload = published.json()
+            if not payload.get("snippets") or not payload.get("week2_grade_reference"):
+                raise RuntimeError("published forecast is missing snippets or the fixed week-two grade reference")
+            if len(payload["week2_grade_reference"].get("grades", [])) != 5:
+                raise RuntimeError("published forecast does not contain five grade definitions")
+            receipt["api"]["published"] = {
+                "status": published.status,
+                "schemaVersion": payload.get("schema_version"),
+                "asOfDate": payload.get("as_of_date"),
+                "snippetCount": len(payload["snippets"]),
+                "gradeReferenceN": payload["week2_grade_reference"].get("reference_n"),
+                "gradeCount": len(payload["week2_grade_reference"].get("grades", [])),
+            }
 
-        for path in ("/", "/viewer"):
+        for path in (() if is_local else ("/", "/viewer")):
             response = context.request.get(urljoin(base, path.lstrip("/")), max_redirects=0, timeout=90000)
             if response.status not in (302, 303):
                 raise RuntimeError(f"{path} auth boundary returned {response.status}")
@@ -117,11 +131,13 @@ def capture_live(source_url):
 
         for name, spec in routes.items():
             page = context.new_page()
+            page.route("**/favicon.ico", lambda route: route.fulfill(status=204))
             errors = []
             page.on("pageerror", lambda error, errors=errors: errors.append(str(error)))
             page.on("console", lambda message, errors=errors: errors.append(message.text)
                     if message.type == "error" else None)
-            response = page.goto(urljoin(base, spec["path"].lstrip("/")),
+            route_base = base if name == "signals" else public_base
+            response = page.goto(urljoin(route_base, spec["path"].lstrip("/")),
                                  wait_until="networkidle", timeout=90000)
             if response is None or response.status != 200:
                 raise RuntimeError(f"{spec['path']} returned no successful document")
@@ -182,7 +198,15 @@ def slide_frame(beat, part, index, total):
 
 
 def capture_frame(beat, part):
-    source = Image.open(CAPTURES / f"{beat['capture']}.png").convert("RGB")
+    source_path = CAPTURES / f"{beat['capture']}.png"
+    if not source_path.exists() and beat["capture"] == "signals":
+        fallback = {
+            "title": "6. 신호 수집 관리",
+            "visual": "매일 06:00 외부신호 수집\n과거 반응 복원 진행률\n입력시점별 내부·외부 AUC 비교\n주간 AI 분석과 추가 수집지시",
+            "subtitle": beat["subtitle"],
+        }
+        return slide_frame(fallback, part, 5, 9)
+    source = Image.open(source_path).convert("RGB")
     frame = Image.new("RGB", SIZE, NAVY)
     source.thumbnail((1160, 620), Image.Resampling.LANCZOS)
     frame.paste(source, ((SIZE[0] - source.width) // 2, 0))

@@ -39,31 +39,31 @@ jobs:
         run: python docs/demo-scripts/ott-forecast/render.py both
       - name: Verify MP4 metadata and decode
         run: |
-          for video in out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4; do
+          for video in out/ott-forecast-v4/ott-forecast-part-1.mp4 out/ott-forecast-v4/ott-forecast-part-2.mp4; do
             ffprobe -v error -show_entries stream=codec_name,width,height -show_entries format=duration,size -of json "$video"
             ffmpeg -v error -i "$video" -f null -
           done
       - name: Upload review artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ott-forecast-demo-v2
+          name: ott-forecast-demo-v4
           path: |
-            out/ott-forecast-v2/ott-forecast-part-1.mp4
-            out/ott-forecast-v2/ott-forecast-part-2.mp4
-            out/ott-forecast-v2/*.srt
-            out/ott-forecast-v2/*-transcript.txt
-            out/ott-forecast-v2/*-receipt.json
-            out/ott-forecast-v2/live-screen-receipt.json
-            out/ott-forecast-v2/captures/*.png
+            out/ott-forecast-v4/ott-forecast-part-1.mp4
+            out/ott-forecast-v4/ott-forecast-part-2.mp4
+            out/ott-forecast-v4/*.srt
+            out/ott-forecast-v4/*-transcript.txt
+            out/ott-forecast-v4/*-receipt.json
+            out/ott-forecast-v4/live-screen-receipt.json
+            out/ott-forecast-v4/captures/*.png
           if-no-files-found: error
       - name: Publish stable release assets
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="ott-forecast-demo-20261111-v3"
+          tag="ott-forecast-demo-20261112-v4"
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --clobber
+            gh release upload "$tag" out/ott-forecast-v4/ott-forecast-part-1.mp4 out/ott-forecast-v4/ott-forecast-part-2.mp4 out/ott-forecast-v4/ott-forecast-part-1.srt out/ott-forecast-v4/ott-forecast-part-2.srt out/ott-forecast-v4/ott-forecast-part-1-receipt.json out/ott-forecast-v4/ott-forecast-part-2-receipt.json --clobber
           else
-            gh release create "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --title "OTT 시청경험률 예측기 데모 v3" --notes "PR Studio가 2026-11-11 운영 Beta 화면의 고정 5등급과 예측 검증 Viewer를 반영해 다시 제작한 2부 데모입니다."
+            gh release create "$tag" out/ott-forecast-v4/ott-forecast-part-1.mp4 out/ott-forecast-v4/ott-forecast-part-2.mp4 out/ott-forecast-v4/ott-forecast-part-1.srt out/ott-forecast-v4/ott-forecast-part-2.srt out/ott-forecast-v4/ott-forecast-part-1-receipt.json out/ott-forecast-v4/ott-forecast-part-2-receipt.json --title "OTT 시청경험률 예측기 데모 v4" --notes "PR Studio가 2026-11-12 운영 Beta의 외부신호 수집기, 과거 반응 복원, 주간 대화창 AI 분석과 추가 수집지시를 반영해 다시 제작한 2부 데모입니다."
           fi
