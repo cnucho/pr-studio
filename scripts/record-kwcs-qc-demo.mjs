@@ -1,4 +1,5 @@
 import { mkdir, readdir, rm, writeFile, copyFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
@@ -20,6 +21,7 @@ const dropboxMp4 = "C:/Users/ciadmin/Dropbox/gitwork_data/AI Company_lecture/dem
 
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const playwrightCandidates = [
+  path.join(root, "node_modules", "playwright"),
   "C:/git-app/kwcs-qc/frontend/control-center/node_modules/playwright",
   "C:/git-app/CI Plan Builder/node_modules/playwright",
   "C:/git-app/AcademicResearchCopilot/node_modules/playwright",
@@ -212,7 +214,7 @@ async function main() {
 
   const playwright = resolvePlaywright();
   const launchOptions = { headless: true, args: ["--window-size=1920,1080"] };
-  if (chromePath) launchOptions.executablePath = chromePath;
+  if (existsSync(chromePath)) launchOptions.executablePath = chromePath;
   const browser = await playwright.chromium.launch(launchOptions);
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },

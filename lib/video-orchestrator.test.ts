@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VideoAgentPlan } from "./video-agent";
-import { runPlanningLoop } from "./video-orchestrator";
-import { blockedContentReview, type ContentReview } from "./video-planning";
+import { runPlanningLoop, type PlanningLoopDependencies } from "./video-orchestrator";
+import {
+  blockedContentReview,
+  type CollectionOrder,
+  type CollectionReport,
+  type ContentReview,
+} from "./video-planning";
+
+type CreatePlanInput = Parameters<PlanningLoopDependencies["createPlan"]>[0];
 
 const pass = { status: "pass", rationale: "콘텐츠 목적에 맞습니다." } as const;
 const readyReview: ContentReview = {
@@ -44,11 +51,11 @@ describe("PR Studio 2.0 planning loop", () => {
     const saved: Array<{ round: number; reports: number }> = [];
     const result = await runPlanningLoop({
       dependencies: {
-        createPlan: vi.fn(async ({ round, collectionReports }) => {
+        createPlan: vi.fn(async ({ round, collectionReports }: CreatePlanInput) => {
           receivedReports.push(collectionReports.map((report) => report.detail));
           return plan(round, round === 2);
         }),
-        collect: vi.fn(async () => [
+        collect: vi.fn(async (): Promise<CollectionReport[]> => [
           {
             order: "입력 예시를 확인해 주세요.",
             capabilityId: "fixture",
@@ -90,16 +97,16 @@ describe("PR Studio 2.0 planning loop", () => {
 
   it("accumulates distinct evidence across rounds and does not collect after round three", async () => {
     const receivedReports: string[][] = [];
-    const collect = vi.fn(async (orders: Array<{ capabilityId: string }>, round: 1 | 2 | 3) => orders.map((order) => ({
+    const collect = vi.fn(async (orders: CollectionOrder[], round: 1 | 2 | 3): Promise<CollectionReport[]> => orders.map((order) => ({
       order: `round-${round}`,
-      capabilityId: order.capabilityId as "fixture" | "preset",
+      capabilityId: order.capabilityId,
       status: "있음" as const,
       detail: `evidence-${round}`,
       provenance: { track: "youtube" as const, scenarioVersion: `${order.capabilityId}-v1`, inputIdentity: "youtube" },
     })));
     const result = await runPlanningLoop({
       dependencies: {
-        createPlan: vi.fn(async ({ round, collectionReports }) => {
+        createPlan: vi.fn(async ({ round, collectionReports }: CreatePlanInput) => {
           receivedReports.push(collectionReports.map((report) => report.detail));
           const next = plan(round, false);
           next.collectionOrders = [{
@@ -126,7 +133,7 @@ describe("PR Studio 2.0 planning loop", () => {
       detail: "저장된 영상 분석",
       provenance: { track: "youtube" as const, scenarioVersion: "video-analysis-v1", inputIdentity: "source" },
     }];
-    const createPlan = vi.fn(async ({ round, collectionReports }: { round: 1 | 2 | 3; collectionReports: typeof storedReports }) => {
+    const createPlan = vi.fn(async ({ round, collectionReports }: CreatePlanInput) => {
       expect(collectionReports.map((report) => report.detail)).toEqual(["저장된 영상 분석"]);
       return plan(round, false);
     });

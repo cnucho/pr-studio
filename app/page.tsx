@@ -590,10 +590,14 @@ export default function Home() {
   const ActiveIcon = activeTabMeta.icon;
 
   useEffect(() => {
-    const nextTab = new URLSearchParams(window.location.search).get("tab");
-    if (isTabKey(nextTab)) {
-      setActiveTab(nextTab);
-    }
+    const timer = window.setTimeout(() => {
+      const nextTab = new URLSearchParams(window.location.search).get("tab");
+      if (isTabKey(nextTab)) {
+        setActiveTab(nextTab);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   function selectTab(tab: TabKey) {
@@ -1445,12 +1449,17 @@ function AgentStudio() {
       });
       return () => { active = false; listener.subscription.unsubscribe(); };
     } catch (error) {
-      setError(error instanceof Error ? error.message : "로그인 설정을 확인할 수 없습니다.");
+      const message = error instanceof Error ? error.message : "로그인 설정을 확인할 수 없습니다.";
+      const timer = window.setTimeout(() => setError(message), 0);
+      return () => window.clearTimeout(timer);
     }
   }, []);
 
   useEffect(() => {
-    setSavedJobId(window.localStorage.getItem("pr-studio.video-agent.job-id") ?? "");
+    const timer = window.setTimeout(() => {
+      setSavedJobId(window.localStorage.getItem("pr-studio.video-agent.job-id") ?? "");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
