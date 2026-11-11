@@ -61,11 +61,11 @@ local authenticated-equivalent capture is used for the review build and CI falls
 back to an explicit workflow slide when credentials are unavailable.
 
 The 2026-11-12 public review build completed without browser console or page
-errors. Part 1 is 143.835 seconds at 1280×720 (SHA-256
-`6d884edd1d4249bad452cfcd0a4ff6da10e9c4de4f22647a42b54faa40372edd`).
-Part 2 is 138.523 seconds at 1280×720 (SHA-256
-`3da0a797d3273136d44ad2bfa8c39ddab2a23f3062d7d4980a4c9d2b2f905154`).
-Both H.264/AAC files passed full ffmpeg decode verification. The protected
+errors. Part 1 is about 144 seconds and Part 2 is about 139 seconds, both at
+1280×720. The release receipt assets record the exact SHA-256 of the current
+published render because neural narration can produce a different binary on a
+later verified rerun. Both H.264/AAC files passed full ffmpeg decode
+verification. The protected
 signal page was also reviewed locally with real recovery and validation state,
 but the public video uses the explicit workflow slide so internal title-level
 data is not published.
