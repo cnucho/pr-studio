@@ -1,4 +1,5 @@
 import { mkdir, readdir, rm, writeFile, copyFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
@@ -213,7 +214,7 @@ async function main() {
 
   const playwright = resolvePlaywright();
   const launchOptions = { headless: true, args: ["--window-size=1920,1080"] };
-  if (chromePath) launchOptions.executablePath = chromePath;
+  if (existsSync(chromePath)) launchOptions.executablePath = chromePath;
   const browser = await playwright.chromium.launch(launchOptions);
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },

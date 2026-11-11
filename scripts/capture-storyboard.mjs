@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -112,11 +113,15 @@ async function clickPrimaryNav(page, name) {
 
 await mkdir(outDir, { recursive: true });
 
-const browser = await playwright.chromium.launch({
+const launchOptions = {
   headless: true,
-  executablePath: chromePath,
   args: ["--disable-dev-shm-usage", "--font-render-hinting=none"],
-});
+};
+if (existsSync(chromePath)) {
+  launchOptions.executablePath = chromePath;
+}
+
+const browser = await playwright.chromium.launch(launchOptions);
 
 const page = await browser.newPage({
   viewport: { width: 1920, height: 1080 },

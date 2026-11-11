@@ -503,10 +503,14 @@ export default function Home() {
   const ActiveIcon = activeTabMeta.icon;
 
   useEffect(() => {
-    const nextTab = new URLSearchParams(window.location.search).get("tab");
-    if (isTabKey(nextTab)) {
-      setActiveTab(nextTab);
-    }
+    const timer = window.setTimeout(() => {
+      const nextTab = new URLSearchParams(window.location.search).get("tab");
+      if (isTabKey(nextTab)) {
+        setActiveTab(nextTab);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   function selectTab(tab: TabKey) {
@@ -1298,7 +1302,6 @@ function AgentStudio() {
   useEffect(() => {
     if (!loading) return;
 
-    setPhase(0);
     const timer = window.setInterval(() => {
       setPhase((current) => Math.min(current + 1, agentProgress.length - 1));
     }, 16000);
@@ -1307,6 +1310,7 @@ function AgentStudio() {
   }, [loading]);
 
   async function runAgent() {
+    setPhase(0);
     setLoading(true);
     setError("");
     setOutput(null);

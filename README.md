@@ -41,10 +41,31 @@ PR Studio는 보도자료, 뉴스 분석, 영상 기획, AI 글쓰기, 타겟팅
 
 ```bash
 npm install
+npm run check:video
 npm run dev
 ```
 
 브라우저에서 `http://127.0.0.1:3016`을 엽니다.
+
+영상 제작용 Python 도구는 별도로 설치합니다.
+
+```bash
+python -m pip install -r requirements-video.txt
+python -m playwright install chromium
+```
+
+`npm run check:video`는 비밀값을 출력하지 않고 Node.js, Python, FFmpeg,
+Playwright Chromium, Pillow, ReportLab과 선택적 TTS·OCR 도구의 준비 상태를
+확인합니다. Google Cloud 자격 증명은 저장소 밖
+`C:\secure\pr-studio-google-tts.json`에 두는 것을 기본으로 합니다.
+
+로컬 키 파일이 없는 환경에서는 Railway `pr-studio` 프로젝트의 staging
+서비스에 보관된 `GOOGLE_SERVICE_ACCOUNT_JSON`을 렌더 프로세스에만 임시
+주입할 수 있습니다. 값은 출력하거나 파일로 저장하지 않습니다.
+
+```powershell
+npm run render:executive-demo:google
+```
 
 ## 녹화/제작 흐름
 

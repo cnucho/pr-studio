@@ -1,0 +1,109 @@
+{
+  "project": "methodiq-research-executive-demo",
+  "title": "조사 결과에서 보고서까지",
+  "language": "ko-KR",
+  "format": "1920x1080",
+  "audience": "조사·연구회사 대표, 임원, 본부장, 연구책임자",
+  "targetDurationMinutes": 2.5,
+  "scenes": [
+    {
+      "id": "01-opening",
+      "kind": "opening",
+      "eyebrow": "METHODIQ EXECUTIVE DEMO",
+      "title": "조사 결과에서\n보고서까지",
+      "body": "차트·도식·설문 시각화에서 PPTX와 보고 문안 검토까지 연결합니다.",
+      "caption": "조사 결과를 판단 가능한 보고물로",
+      "narration": "조사 결과는 숫자를 계산하는 것으로 끝나지 않습니다. 경영진과 고객이 판단할 수 있도록 차트와 도식으로 설명하고, 발표자료와 보고 문안으로 이어져야 합니다."
+    },
+    {
+      "id": "02-tool-choice",
+      "kind": "tool-map",
+      "eyebrow": "01 · QUESTION FIRST",
+      "title": "질문에 따라\n도구를 나눈다",
+      "body": "관계는 도식, 비교는 차트, 문항별 응답은 설문 시각화로 설명합니다.",
+      "caption": "질문이 시각화 도구를 결정한다",
+      "narration": "관계와 절차는 도식으로, 집단 비교와 추세는 차트로, 문항별 응답 구조는 설문 시각화로 다룹니다. 먼저 질문을 정하고 그 질문에 맞는 형식을 선택합니다."
+    },
+    {
+      "id": "03-chart",
+      "kind": "hierarchy",
+      "eyebrow": "02 · CHART STUDIO",
+      "title": "비교와 추세를\n한 문장으로",
+      "body": "정렬, 직접 라벨, 강조색으로 핵심 집단과 격차를 먼저 읽게 합니다.",
+      "caption": "Chart Studio · 비교와 추세",
+      "narration": "Chart Studio는 많은 숫자를 그대로 옮기지 않습니다. 핵심 비교를 정렬하고 직접 라벨을 붙여, 어느 집단의 차이가 중요한지 한 화면에서 읽게 합니다."
+    },
+    {
+      "id": "04-diagram",
+      "kind": "diagram",
+      "eyebrow": "03 · DIAGRAM STUDIO",
+      "title": "관계와 책임을\n도식으로",
+      "body": "조사 설계, 분석 절차, 검토 책임을 합의 가능한 구조로 바꿉니다.",
+      "caption": "Diagram Studio · 관계와 흐름",
+      "narration": "Diagram Studio는 조사 설계, 분석 절차, 검토 책임처럼 숫자만으로 설명하기 어려운 관계를 보여 줍니다. 복잡한 업무 흐름을 합의 가능한 구조로 바꿉니다."
+    },
+    {
+      "id": "05-survey",
+      "kind": "survey-case",
+      "eyebrow": "04 · SURVEY VISUALIZATION",
+      "title": "응답 비율과\n분모를 함께 확인",
+      "body": "문항별 분포와 척도 구조를 보여 주고 해석 기준을 분명히 합니다.",
+      "caption": "Survey Visualization · 응답과 분모",
+      "narration": "Survey Visualization은 문항별 응답 비율뿐 아니라 분모와 척도 구조를 함께 확인하게 합니다. 비율이 무엇을 기준으로 계산됐는지 보이는 것이 핵심입니다."
+    },
+    {
+      "id": "06-validation",
+      "kind": "critique",
+      "eyebrow": "05 · REVIEW GATES",
+      "title": "생성 뒤에는\n세 가지 검증",
+      "body": "값과 단위, 시각적 위계, 조사 범위를 차례로 확인합니다.",
+      "caption": "사실 · 지각 · 맥락 검증",
+      "narration": "자동 생성 뒤에는 세 가지 검토가 필요합니다. 값과 단위가 맞는지, 핵심이 제대로 보이는지, 해석이 조사 범위를 넘지 않는지 확인합니다."
+    },
+    {
+      "id": "07-pptx",
+      "kind": "report",
+      "eyebrow": "06 · POWERPOINT EDITOR",
+      "title": "편집 가능한\nPPTX로 연결",
+      "body": "검토한 차트와 도식을 발표 흐름에 맞게 배치하고 내보냅니다.",
+      "caption": "검토한 시각물을 발표자료로",
+      "narration": "검토한 차트와 도식은 PowerPoint 편집기로 이어집니다. 발표 흐름에 맞게 배치하고, 수정 가능한 PPTX로 내보내 고객 보고와 내부 회의에 활용합니다."
+    },
+    {
+      "id": "08-gwriter",
+      "kind": "prompt-case",
+      "eyebrow": "07 · GWRITER",
+      "title": "보고 문안의\n근거와 표현을 검토",
+      "body": "과장, 근거 누락, 주의점과 해석 범위를 확인하고 수정 제안을 반영합니다.",
+      "caption": "gWriter · 검토 가능한 문안",
+      "narration": "같은 결과의 보고 문안은 gWriter에서 검토합니다. 표현이 과장되지 않았는지, 근거와 주의점이 빠지지 않았는지 확인하고 수정 제안을 반영합니다."
+    },
+    {
+      "id": "09-workflow",
+      "kind": "workflow",
+      "eyebrow": "08 · ONE PRODUCTION FLOW",
+      "title": "질문에서\n내보내기까지",
+      "body": "도구는 나뉘어 있어도 검수 기준과 산출물은 하나의 과정으로 이어집니다.",
+      "caption": "질문 → 초안 → 검토 → 수정 → 내보내기",
+      "narration": "전체 흐름은 질문, 초안, 검토, 수정, 내보내기의 순서입니다. 도구는 나뉘어 있지만 검수 기준과 산출물은 하나의 제작 과정으로 연결됩니다."
+    },
+    {
+      "id": "10-readiness",
+      "kind": "checklist",
+      "eyebrow": "09 · ADOPTION READINESS",
+      "title": "도입 전에\n통제 지점을 정한다",
+      "body": "설치, 권한, 원자료 보호, 검수 책임과 산출물 형식을 먼저 합의합니다.",
+      "caption": "설치 · 권한 · 원자료 · 검수 기준",
+      "narration": "도입 시에는 설치 환경, 접근 권한, 원자료 보호, 검수 책임, 산출물 형식을 먼저 정해야 합니다. 자동화 범위보다 통제 지점을 분명히 하는 것이 중요합니다."
+    },
+    {
+      "id": "11-closing",
+      "kind": "closing",
+      "eyebrow": "METHODIQ",
+      "title": "도구가 아니라\n제작 체계를 바꾼다",
+      "body": "조사 결과를 설명하고 검토하고 전달하는 과정을 일관되게 운영합니다.",
+      "caption": "조사 결과를 일관된 제작 체계로",
+      "narration": "MethodIQ의 가치는 차트를 하나 더 만드는 데 있지 않습니다. 조사 결과를 설명하고 검토하고 전달하는 과정을 일관된 제작 체계로 바꾸는 데 있습니다."
+    }
+  ]
+}
