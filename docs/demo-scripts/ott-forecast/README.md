@@ -60,13 +60,15 @@ AI-issued follow-up collection instructions. The signal page remains protected;
 local authenticated-equivalent capture is used for the review build and CI falls
 back to an explicit workflow slide when credentials are unavailable.
 
-The 2026-11-12 review build completed without browser console or page errors.
-Part 1 is 143.835 seconds at 1280×720 (SHA-256
-`4a75a0a6341a2af3a655c31d5bd5812e340bdb67953781dfdabc3cd0933d2bd3`).
+The 2026-11-12 public review build completed without browser console or page
+errors. Part 1 is 143.835 seconds at 1280×720 (SHA-256
+`a909794ef1097c8871db199e7aceee968360117b50fafb0659eab0ace267d871`).
 Part 2 is 138.523 seconds at 1280×720 (SHA-256
-`9bbb3a4ae2f2c77d409f66f30e12becb2e76f27d9c088a10bfc3f988c065ca3e`).
-Both H.264/AAC files passed full ffmpeg decode verification; Part 2 includes the
-actual signal-collector screen with recovery and validation metrics.
+`2527952c82d124a788deeed59ad810ffd2b0cab0ec08e68b4847569c3c2c40e8`).
+Both H.264/AAC files passed full ffmpeg decode verification. The protected
+signal page was also reviewed locally with real recovery and validation state,
+but the public video uses the explicit workflow slide so internal title-level
+data is not published.
 
 ## Previous verified v3 receipt
 
