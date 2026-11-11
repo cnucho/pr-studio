@@ -5,7 +5,7 @@ forecast Beta app.
 
 - Live app: https://forecast-web-production.up.railway.app/
 - CI Portal demo page: https://ci.methodiq.tools/demos
-- Stable media release tag: `ott-forecast-demo-20261111`
+- Stable media release tag: `ott-forecast-demo-20261111-v3`
 - Renderer: `render.py`
 - Part 1 manifest: `intro.json`
 - Part 2 manifest: `tutorial.json`
@@ -14,20 +14,25 @@ forecast Beta app.
 
 Part 1 explains the product boundary: the weekly dashboard workbook is converted
 into current post-launch week 1, 2, and 3 viewing-experience forecasts; forecast
-uncertainty is shown; baseline, Ridge, histogram gradient boosting, and CatBoost
-are compared; new actuals feed error learning; and daily YouTube evidence is
+uncertainty and a frozen absolute five-grade scale are shown; the guide includes
+absolute percentage ranges, median representative titles, content share, and
+approximate viewing contribution; baseline, Ridge, histogram gradient boosting,
+and CatBoost are compared; the historical review Viewer compares every stored
+forecast point with later actuals and errors; new actuals feed error learning; and daily YouTube evidence is
 used to draft change explanations. The on-screen responsibility statement is
 `수행: Consumer Insight 연구분석팀` and `방법론 책임: 김양혁`.
 
 Part 2 shows the weekly operating flow: submit the existing Excel format through
 the app, conversation, email, or the dedicated MCP; review forecast/actual
-snippets and method performance; edit the shared YouTube brief; and control
+snippets, the fixed week-two grade guide, method performance, and the historical
+forecast-versus-actual Viewer; edit the shared YouTube brief; and control
 publication and forecast export with the designated operator/admin roles.
 
 ## Build and verification
 
 The GitHub workflow `render-ott-forecast-demos.yml` captures the live Beta
-screens, renders Korean narration and burned-in captions, decodes both MP4 files
+screens, checks health and the published JSON contract, verifies that management
+and Viewer routes enforce central sign-in, fails on browser console errors, renders Korean narration and burned-in captions, decodes both MP4 files
 with ffmpeg, stores review artifacts, and publishes stable release assets.
 Generated MP4, audio, screenshots, SRT, transcript, and receipt files remain
 outside Git.
@@ -40,7 +45,9 @@ python docs/demo-scripts/ott-forecast/render.py both
 ```
 
 The release receipt records duration, dimensions, SHA-256, narration voice,
-source URL, and captured live screens. CI Portal embeds the stable release MP4s
+source URL, and captured live screens. `live-screen-receipt.json` separately
+records HTTP status, required visible text, published schema/grade counts,
+authentication boundaries, console errors, and screenshot paths. CI Portal embeds the stable release MP4s
 and does not grant product-app access.
 
 ## Superseded 2026-11-07 YouTube demos
