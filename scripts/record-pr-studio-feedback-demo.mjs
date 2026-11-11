@@ -1,4 +1,5 @@
-import { mkdir, readdir, rm, writeFile, copyFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, rm, writeFile, copyFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,14 +11,14 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
 const require = createRequire(import.meta.url);
 
-const appUrl = process.env.PR_STUDIO_FEEDBACK_URL ?? "http://127.0.0.1:3026/?tab=performance";
+const appUrl = process.env.PR_STUDIO_FEEDBACK_URL ?? "http://127.0.0.1:3016/?tab=performance";
 const outRoot = path.join(root, "out", "ai-company-lecture-demos", "pr-studio-feedback");
 const rawDir = path.join(outRoot, "raw");
 const narrationDir = path.join(outRoot, "narration");
 const finalMp4 = path.join(outRoot, "pr-studio-feedback-demo.mp4");
 const finalNoSubsMp4 = path.join(outRoot, "pr-studio-feedback-demo-nosubs.mp4");
-const samplePng = path.join(outRoot, "pr-studio-feedback-demo-sample.png");
-const dropboxMp4 = "C:/Users/ciadmin/Dropbox/gitwork_data/AI Company_lecture/demos/demo-08-pr-studio-feedback-loop.mp4";
+const verificationPath = path.join(outRoot, "verification.json");
+const dropboxMp4 = process.env.PR_STUDIO_FEEDBACK_DROPBOX_PATH?.trim() ?? "";
 
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const playwrightCandidates = [
@@ -119,6 +120,10 @@ function probeDuration(file) {
   );
 }
 
+async function sha256(file) {
+  return createHash("sha256").update(await readFile(file)).digest("hex");
+}
+
 function subtitleTime(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -195,7 +200,7 @@ async function gentleScroll(page, amount, steps = 6) {
 async function main() {
   await mkdir(rawDir, { recursive: true });
   await mkdir(narrationDir, { recursive: true });
-  await mkdir(path.dirname(dropboxMp4), { recursive: true });
+  if (dropboxMp4) await mkdir(path.dirname(dropboxMp4), { recursive: true });
   for (const name of await readdir(rawDir)) {
     if (name.endsWith(".webm")) await rm(path.join(rawDir, name), { force: true });
   }
@@ -207,7 +212,6 @@ async function main() {
     env: {
       ...process.env,
       PR_STUDIO_TTS_PROVIDER: "google",
-      GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "C:/secure/pr-studio-google-tts.json",
       GOOGLE_TTS_VOICE_KO: process.env.GOOGLE_TTS_VOICE_KO ?? "ko-KR-Chirp3-HD-Kore",
       GOOGLE_TTS_SPEAKING_RATE: process.env.GOOGLE_TTS_SPEAKING_RATE ?? "0.94",
     },
@@ -328,12 +332,36 @@ async function main() {
     "copy",
     finalMp4,
   ]);
-  run("ffmpeg", ["-y", "-loglevel", "error", "-ss", "57", "-i", finalMp4, "-frames:v", "1", samplePng]);
-  await copyFile(finalMp4, dropboxMp4);
   const finalInfo = JSON.parse(
     capture("ffprobe", ["-v", "error", "-show_entries", "stream=codec_name,width,height,sample_rate,channels:format=duration,size", "-of", "json", finalMp4]),
   );
-  console.log(JSON.stringify({ appUrl, finalMp4, dropboxMp4, samplePng, finalInfo }, null, 2));
+  const finalDuration = Number.parseFloat(finalInfo.format.duration);
+  const samples = [];
+  for (const percentage of [25, 60, 85]) {
+    const sample = path.join(outRoot, `sample-${percentage}.png`);
+    run("ffmpeg", ["-y", "-loglevel", "error", "-ss", String(finalDuration * percentage / 100), "-i", finalMp4, "-frames:v", "1", sample]);
+    samples.push(sample);
+  }
+  run("ffmpeg", ["-v", "error", "-i", finalMp4, "-f", "null", "-"]);
+  if (dropboxMp4) await copyFile(finalMp4, dropboxMp4);
+
+  const verification = {
+    generatedAt: new Date().toISOString(),
+    appUrl,
+    video: finalMp4,
+    videoSha256: await sha256(finalMp4),
+    samples,
+    tts: {
+      provider: "google",
+      voice: process.env.GOOGLE_TTS_VOICE_KO ?? "ko-KR-Chirp3-HD-Kore",
+      speakingRate: Number(process.env.GOOGLE_TTS_SPEAKING_RATE ?? "0.94"),
+    },
+    probe: finalInfo,
+    fullDecode: "passed",
+    copiedToDropbox: Boolean(dropboxMp4),
+  };
+  await writeFile(verificationPath, `${JSON.stringify(verification, null, 2)}\n`, "utf8");
+  console.log(JSON.stringify({ ok: true, finalMp4, verificationPath, verification }, null, 2));
 }
 
 main().catch((error) => {

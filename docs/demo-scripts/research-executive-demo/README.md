@@ -38,3 +38,15 @@ node docs\demo-scripts\research-executive-demo\render.mjs
 Google Cloud 자격 증명이 있으면 `ko-KR-Chirp3-HD-Kore`, 속도 0.94를 사용한다. 자격 증명이 없고 `OPENAI_API_KEY`가 있으면 OpenAI 한국어 음성으로 폴백한다. 실제 공급자는 `out/research-executive-demo/verification.json`에 기록한다.
 
 완성 영상, 음성, 프레임, 자막, 대본과 검증 영수증은 Git에서 제외된 `out/research-executive-demo/`에 생성한다.
+
+## 실제 화면 후속 워크스루
+
+배포된 PR Studio의 성과 분석 화면을 사용하는 후속 제품 워크스루는 다음과 같이 만든다.
+
+```powershell
+$env:PR_STUDIO_FEEDBACK_URL = "https://pr-studio-staging-staging.up.railway.app/?tab=performance"
+npm run record:feedback-demo:google
+Remove-Item Env:PR_STUDIO_FEEDBACK_URL
+```
+
+Dropbox 복사가 필요할 때만 `PR_STUDIO_FEEDBACK_DROPBOX_PATH`를 명시한다. 기본 실행은 저장소의 무시된 `out/` 경로에만 결과를 만들며, 전체 영상 디코딩·표본 프레임·SHA-256 검증 결과를 함께 남긴다.

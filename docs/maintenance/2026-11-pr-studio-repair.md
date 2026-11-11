@@ -13,6 +13,7 @@ PR Studio의 웹 앱과 영상 워커를 유지하면서, 로컬·Railway 환경
 - 영상 제작용 Python 패키지를 `requirements-video.txt`에 명시했다.
 - 생성 영상, 오디오, 캡처 화면과 작업 JSON은 Git에 넣지 않고 기존 무시 경로에서 관리한다.
 - 조사회사 간부 시연용 목표, 영상계획서, 대본, 스토리보드, YouTube 메타데이터와 렌더러를 `docs/demo-scripts/research-executive-demo/`에 추가했다.
+- 실제 배포 화면을 녹화하는 피드백 워크스루는 PC별 Dropbox 경로를 하드코딩하지 않으며, 전체 영상 디코딩·표본 프레임·SHA-256 검증 결과를 함께 남긴다.
 
 ## Google Cloud TTS 자격증명
 
