@@ -316,6 +316,22 @@ function dataUrl(file) {
   return `data:image/png;base64,${fs.readFileSync(file).toString("base64")}`;
 }
 
+function redactCapture(fileName, filter) {
+  const source = path.join(captureRoot, fileName);
+  const temporary = `${source}.redacted.png`;
+  if (!fs.existsSync(source)) throw new Error(`Capture for redaction is missing: ${source}`);
+  run("ffmpeg", ["-y", "-loglevel", "error", "-i", source, "-vf", filter, "-frames:v", "1", temporary]);
+  fs.renameSync(temporary, source);
+}
+
+function sanitizePublicCaptures() {
+  for (const fileName of ["01-recovery-home.png", "02-recovery-result.png", "03-codebook.png"]) {
+    redactCapture(fileName, "drawbox=x=0:y=0:w=iw:h=48:color=0xEEF2FB:t=fill");
+  }
+  redactCapture("04-quality-error.png", "drawbox=x=515:y=195:w=275:h=40:color=white:t=fill");
+  redactCapture("06-persona-result.png", "drawbox=x=150:y=165:w=315:h=45:color=white:t=fill");
+}
+
 function sceneHtml(scene, index, total) {
   const image = scene.image
     ? `<div class="browser"><div class="browserbar"><i></i><i></i><i></i><span>운영 화면 캡처 · 민감정보 없음</span></div><img src="${dataUrl(path.join(captureRoot, scene.image))}"></div>`
@@ -345,6 +361,7 @@ function srtTime(seconds) {
 
 async function renderVideo(chromium, captureReport) {
   await Promise.all([slideRoot, narrationRoot, audioRoot, clipRoot].map((dir) => mkdir(dir, { recursive: true })));
+  sanitizePublicCaptures();
   const sceneList = scenes();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
