@@ -6,6 +6,7 @@ machine-readable verification receipt. Generated media stays outside Git.
 """
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import subprocess
@@ -65,19 +66,95 @@ def wrap(draw, value, selected_font, max_width):
 
 def capture_live(source_url):
     CAPTURES.mkdir(parents=True, exist_ok=True)
+    base = source_url.rstrip("/") + "/"
     routes = {
-        "snippets": "/snippets",
-        "methods": "/methods",
+        "snippets": {"path": "/snippets", "required": ["OTT 예측 스니펫", "2주차 등급안내"]},
+        "methods": {"path": "/methods", "required": ["예측방법과 검증결과", "기준선 대비 오차감소"]},
+        "preview": {"path": "/preview", "required": ["관리자가 게시한 실제 예측결과"]},
+    }
+    receipt = {
+        "schemaVersion": "ott-live-screen-check/1.0",
+        "checkedAt": datetime.now(timezone.utc).isoformat(),
+        "sourceUrl": source_url,
+        "routes": {},
+        "api": {},
+        "authBoundaries": {},
+        "consoleErrors": [],
     }
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
-        page = browser.new_page(viewport={"width": 1280, "height": 720}, device_scale_factor=1)
-        for name, route in routes.items():
-            page.goto(urljoin(source_url.rstrip("/") + "/", route.lstrip("/")), wait_until="networkidle", timeout=90000)
+        context = browser.new_context(viewport={"width": 1280, "height": 720}, device_scale_factor=1)
+        health = context.request.get(urljoin(base, "health"), timeout=90000)
+        if health.status != 200 or health.json().get("status") != "ok":
+            raise RuntimeError(f"health check failed: {health.status}")
+        receipt["api"]["health"] = {"status": health.status, "body": health.json()}
+
+        published = context.request.get(urljoin(base, "api/public/published"), timeout=90000)
+        if published.status != 200:
+            raise RuntimeError(f"published forecast failed: {published.status}")
+        payload = published.json()
+        if not payload.get("snippets") or not payload.get("week2_grade_reference"):
+            raise RuntimeError("published forecast is missing snippets or the fixed week-two grade reference")
+        if len(payload["week2_grade_reference"].get("grades", [])) != 5:
+            raise RuntimeError("published forecast does not contain five grade definitions")
+        receipt["api"]["published"] = {
+            "status": published.status,
+            "schemaVersion": payload.get("schema_version"),
+            "asOfDate": payload.get("as_of_date"),
+            "snippetCount": len(payload["snippets"]),
+            "gradeReferenceN": payload["week2_grade_reference"].get("reference_n"),
+            "gradeCount": len(payload["week2_grade_reference"].get("grades", [])),
+        }
+
+        for path in ("/", "/viewer"):
+            response = context.request.get(urljoin(base, path.lstrip("/")), max_redirects=0, timeout=90000)
+            if response.status not in (302, 303):
+                raise RuntimeError(f"{path} auth boundary returned {response.status}")
+            location = response.headers.get("location", "")
+            if not location.endswith("/auth/login"):
+                raise RuntimeError(f"{path} did not redirect to central sign-in")
+            receipt["authBoundaries"][path] = {"status": response.status, "location": location}
+
+        for name, spec in routes.items():
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error, errors=errors: errors.append(str(error)))
+            page.on("console", lambda message, errors=errors: errors.append(message.text)
+                    if message.type == "error" else None)
+            response = page.goto(urljoin(base, spec["path"].lstrip("/")),
+                                 wait_until="networkidle", timeout=90000)
+            if response is None or response.status != 200:
+                raise RuntimeError(f"{spec['path']} returned no successful document")
             page.add_style_tag(content="*{scroll-behavior:auto!important} ::-webkit-scrollbar{display:none!important}")
             page.wait_for_timeout(5000)
+            body = page.locator("body").inner_text()
+            for required in spec["required"]:
+                if required not in body:
+                    raise RuntimeError(f"{spec['path']} is missing required text: {required}")
+            if name == "snippets":
+                page.locator("#grid article").first.wait_for(state="visible", timeout=30000)
+                guide = page.locator("#grade-guide")
+                if guide.is_visible() and not guide.get_attribute("open"):
+                    guide.locator("summary").click()
+                    page.wait_for_timeout(700)
+            if name == "preview":
+                page.locator("ott-forecast-board").wait_for(state="visible", timeout=30000)
+            if errors:
+                receipt["consoleErrors"].extend({"route": spec["path"], "message": item}
+                                                for item in errors)
+                raise RuntimeError(f"{spec['path']} emitted browser errors: {errors}")
             page.screenshot(path=str(CAPTURES / f"{name}.png"), full_page=False)
+            receipt["routes"][spec["path"]] = {
+                "status": response.status,
+                "title": page.title(),
+                "requiredText": spec["required"],
+                "screenshot": f"captures/{name}.png",
+            }
+            page.close()
         browser.close()
+    (OUT / "live-screen-receipt.json").write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8")
+    return receipt
 
 
 def slide_frame(beat, part, index, total):
