@@ -53,15 +53,17 @@ jobs:
             out/ott-forecast-v2/*.srt
             out/ott-forecast-v2/*-transcript.txt
             out/ott-forecast-v2/*-receipt.json
+            out/ott-forecast-v2/live-screen-receipt.json
+            out/ott-forecast-v2/captures/*.png
           if-no-files-found: error
       - name: Publish stable release assets
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="ott-forecast-demo-20261111"
+          tag="ott-forecast-demo-20261111-v3"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --clobber
           else
-            gh release create "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --title "OTT 시청경험률 예측기 데모 v2" --notes "PR Studio가 2026-11-11 운영 Beta 화면을 캡처해 제작한 2부 데모입니다."
+            gh release create "$tag" out/ott-forecast-v2/ott-forecast-part-1.mp4 out/ott-forecast-v2/ott-forecast-part-2.mp4 out/ott-forecast-v2/ott-forecast-part-1.srt out/ott-forecast-v2/ott-forecast-part-2.srt out/ott-forecast-v2/ott-forecast-part-1-receipt.json out/ott-forecast-v2/ott-forecast-part-2-receipt.json --title "OTT 시청경험률 예측기 데모 v3" --notes "PR Studio가 2026-11-11 운영 Beta 화면의 고정 5등급과 예측 검증 Viewer를 반영해 다시 제작한 2부 데모입니다."
           fi
