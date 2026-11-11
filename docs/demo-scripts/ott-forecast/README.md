@@ -62,9 +62,9 @@ back to an explicit workflow slide when credentials are unavailable.
 
 The 2026-11-12 public review build completed without browser console or page
 errors. Part 1 is 143.835 seconds at 1280×720 (SHA-256
-`a909794ef1097c8871db199e7aceee968360117b50fafb0659eab0ace267d871`).
+`6d884edd1d4249bad452cfcd0a4ff6da10e9c4de4f22647a42b54faa40372edd`).
 Part 2 is 138.523 seconds at 1280×720 (SHA-256
-`2527952c82d124a788deeed59ad810ffd2b0cab0ec08e68b4847569c3c2c40e8`).
+`3da0a797d3273136d44ad2bfa8c39ddab2a23f3062d7d4980a4c9d2b2f905154`).
 Both H.264/AAC files passed full ffmpeg decode verification. The protected
 signal page was also reviewed locally with real recovery and validation state,
 but the public video uses the explicit workflow slide so internal title-level
