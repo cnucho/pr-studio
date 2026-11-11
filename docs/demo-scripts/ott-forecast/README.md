@@ -50,6 +50,13 @@ records HTTP status, required visible text, published schema/grade counts,
 authentication boundaries, console errors, and screenshot paths. CI Portal embeds the stable release MP4s
 and does not grant product-app access.
 
+## Verified v3 receipt
+
+The 2026-11-11 live-screen run completed with no browser console or page errors.
+Part 1 is 123.363 seconds at 1280×720 (SHA-256 `c0c1e51f4cc41862713ab03fecba51bf5582e9b7307924e167db5b9bfc856dea`).
+Part 2 is 107.122 seconds at 1280×720 (SHA-256 `8b2bdb4d22483df57702ffeda2f7a79b1fd8e20f82589ca5f3aca00ff95d25b2`).
+Both H.264/AAC files passed full ffmpeg decode verification.
+
 ## Superseded 2026-11-07 YouTube demos
 
 The earlier unlisted videos `I6_JAs_qSh8` and `x1HSqwENA-g` describe the old
