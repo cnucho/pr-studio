@@ -28,6 +28,16 @@
 8. 원본 대화 이벤트, 사용한 MCP 도구, 결과 요약, 영상 해시와 전체 디코드 결과를 보관한다.
 9. 외부 편집기로 handoff되는 도구는 실제 편집기 화면을 녹화하고, 완료 후 MCP가 반환한 최종 상태와 문서 해시를 다시 확인한다.
 
+## Chart Studio 실제 사용 기록
+
+차트 영상은 실제 Chart Studio 편집기를 실행해 녹화한다. 가상데이터 XLSX의 `01_그룹비교`와 `03_선택흐름` 시트를 차례로 불러오고, 비교 차트·Sankey·기술적 해석·PPTX 전달을 기록한다.
+
+```powershell
+npm run record:chart-studio-office-demo
+```
+
+출력은 `out/live-usage-demos/chart-studio-office-live-usage/`에 생성된다. 영상은 무음 실제 사용기록형이며, 단계 안내 자막만 사용한다.
+
 ## 제작 흐름
 
 1. 대상 앱에 맞는 MCP 도구와 안전한 합성·공개 자료를 선택한다.
