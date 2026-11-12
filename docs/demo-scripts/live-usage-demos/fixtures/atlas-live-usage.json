@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "id": "atlas-mcp-live-usage",
+  "title": "Atlas MCP 실제 사용 기록",
+  "subtitle": "상위 구매확률 분위 검증과 차량 선택 흐름",
+  "recordedAt": "2026-11-13T00:00:00+09:00",
+  "source": {
+    "connector": "Atlas 연도별 선택 이유",
+    "workspace": "analysis10 public research report",
+    "releaseId": "analysis10-2026-validation",
+    "finalRevision": "2026 실구매 검증 · 현대 희망 흐름"
+  },
+  "events": [
+    {
+      "role": "user",
+      "text": "Atlas의 구매확률 상위 분위 예측이 실제 구매에서도 잘 구분됐는지 보여줘.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "assistant",
+      "text": "2026년 연결 응답자의 실구매 결과로 상위 누적 구간을 검증하겠습니다.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "tool",
+      "tool": "query_analysis10_report",
+      "status": "success",
+      "input": "2026_VALIDATION · scorecard · 상위 5·10%",
+      "result": "AUC 0.734 · PR-AUC 0.193(기준 0.062) · Brier 0.0545(기준 0.0583)",
+      "holdSeconds": 9
+    },
+    {
+      "role": "assistant",
+      "text": "모형의 순위 선별력과 확률 보정이 기준모형보다 좋다. 상위 구간의 예측률과 실제 구매율도 비교하겠습니다.",
+      "holdSeconds": 8
+    },
+    {
+      "role": "tool",
+      "tool": "query_analysis10_report",
+      "status": "success",
+      "input": "2026_VALIDATION · 상위 누적 구매확률 구간",
+      "result": "상위 5%: 예측 27.20% / 실제 27.61% / lift 4.44 · 상위 10%: 예측 21.52% / 실제 22.53% / lift 3.62",
+      "holdSeconds": 10
+    },
+    {
+      "role": "user",
+      "text": "현대 희망자의 이전차, 현재차, 다음 선택 흐름도 보여줘.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "tool",
+      "tool": "query_analysis10_report",
+      "status": "success",
+      "input": "2026_VALIDATION · 현대 희망 · flow · 상위 10%",
+      "result": "기준 N=738 · 현재 현대 396명 · 현대→현대 기대구매 52.55명 · 현대→기아 15.66명 · 현대→제네시스 3.91명",
+      "holdSeconds": 10
+    },
+    {
+      "role": "assistant",
+      "text": "Atlas는 예측 성능뿐 아니라 이전차→현재차→다음 선택의 흐름을 함께 보여준다. 2026년 연결자 검증과 공개 연구보고서 결과이며 제품 승인 집계나 개인 예측은 아니다.",
+      "holdSeconds": 10
+    }
+  ]
+}

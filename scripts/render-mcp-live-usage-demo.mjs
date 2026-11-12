@@ -79,7 +79,11 @@ for (const [index, event] of scenario.events.entries()) {
   } else {
     await page.evaluate((i) => window.addEvent(i), index);
   }
-  await page.waitForTimeout(event.role === "artifact" ? 4200 : event.role === "tool" ? 2500 : 1800);
+  const defaultHoldMs = event.role === "artifact" ? 4200 : event.role === "tool" ? 2500 : 1800;
+  const holdMs = Number.isFinite(Number(event.holdSeconds))
+    ? Math.max(800, Number(event.holdSeconds) * 1000)
+    : defaultHoldMs;
+  await page.waitForTimeout(holdMs);
 }
 await page.waitForTimeout(1800);
 const video = page.video();

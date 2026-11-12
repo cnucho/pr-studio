@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "id": "aimm-mcp-live-usage",
+  "title": "AIMM MCP 실제 사용 기록",
+  "subtitle": "조사 결과와 등록자료의 연관성, 이벤트별 기대 변화",
+  "recordedAt": "2026-11-13T00:00:00+09:00",
+  "source": {
+    "connector": "AIMM 분석",
+    "workspace": "aggregate-only candidate snapshot",
+    "snapshotId": "f700c7a686f9",
+    "finalRevision": "A5(B10) · 2025-12"
+  },
+  "events": [
+    {
+      "role": "user",
+      "text": "AIMM 조사 결과가 실제 등록자료와 관련이 있는지 먼저 확인해 줘.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "assistant",
+      "text": "조사 차량과 등록 차량이 함께 관측된 범위부터 확인하겠습니다.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "tool",
+      "tool": "get_aimm_registration_evidence",
+      "status": "success",
+      "input": "AIMM 구입가능성 × 등록자료 · 공통 차량·월",
+      "result": "공통 차량 21개 · 공통 차량-월 107개 · 등록 관측 차량 119개 · 상관계수 r=0.381",
+      "holdSeconds": 10
+    },
+    {
+      "role": "assistant",
+      "text": "구입가능성 지표와 등록량 사이에 양의 관측 연관성이 있다. 다만 규모·차급·가격·시점이 섞인 결과이므로 인과효과나 판매예측 계수는 아니다.",
+      "holdSeconds": 9
+    },
+    {
+      "role": "user",
+      "text": "그럼 A5의 공개, 사전계약, 출시 기사 단계별 기대 변화도 비교해 줘.",
+      "holdSeconds": 5
+    },
+    {
+      "role": "tool",
+      "tool": "get_aimm_event_scenario",
+      "status": "success",
+      "input": "A5 (B10) · 공개 단계 비교",
+      "result": "비교 12건 · 평균 +0.59%p · 상위 25% 평균 +1.91%p",
+      "holdSeconds": 8
+    },
+    {
+      "role": "tool",
+      "tool": "get_aimm_event_scenario",
+      "status": "success",
+      "input": "A5 (B10) · 사전계약 단계 비교",
+      "result": "비교 10건 · 평균 +0.85%p · 상위 25% 평균 +2.70%p",
+      "holdSeconds": 8
+    },
+    {
+      "role": "tool",
+      "tool": "get_aimm_event_scenario",
+      "status": "success",
+      "input": "A5 (B10) · 출시 기사 단계 비교",
+      "result": "비교 12건 · 평균 +2.61%p · 상위 25% 평균 +5.01%p",
+      "holdSeconds": 9
+    },
+    {
+      "role": "assistant",
+      "text": "단계가 뒤로 갈수록 관측 기대 변화가 커진다. 이는 유사 사례 비교 시나리오이며, 검증된 행사 인과효과나 판매 보장은 아니다.",
+      "holdSeconds": 9
+    }
+  ]
+}
