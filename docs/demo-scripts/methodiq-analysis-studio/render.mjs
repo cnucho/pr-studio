@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -9,16 +8,17 @@ const out = path.join(root, "out", "methodiq-analysis-studio");
 const narrationDir = path.join(out, "narration");
 const audioDir = path.join(out, "audio");
 const appUrl = process.env.ANALYSIS_DEMO_APP_URL ?? "http://127.0.0.1:18814/";
+const sampleSav = path.join(out, "synthetic-survey.sav");
 const scenes = [
-  { id: "01", caption: "MethodIQ Analysis Studio | 가상자료 체험", narration: "MethodIQ Analysis Studio는 조사 연구자와 정책 평가 담당자가 인과분석, 예측, 회귀분석을 직접 실행하고 결과를 검토하는 도구입니다.", action: async () => {} },
-  { id: "02", caption: "일반 머신러닝 선택", narration: "고객 이탈을 살펴보겠습니다. 일반 머신러닝을 선택하면 가상 고객 팔백 명의 질문과 분석 조건이 나타납니다.", action: async (page) => { await page.getByRole("button", { name: "일반 머신러닝" }).click(); } },
-  { id: "03", caption: "가상 고객 800명 · 변수 확인", narration: "예제 데이터가 이미 준비되어 있습니다. 변수 설명을 열어 목표 변수와 예측 변수를 먼저 확인합니다.", action: async (page) => { await page.getByText("변수 설명 보기").click(); } },
-  { id: "04", caption: "예제 분석 실행", narration: "예제 분석 실행을 누릅니다. 앱은 학습 자료와 검증 자료를 나누고, 실제 계산 결과를 화면에 표시합니다.", action: async (page) => { await page.getByRole("button", { name: "예제 분석 실행" }).click(); await page.getByText("분석과 검증이 완료되었습니다.").waitFor({ timeout: 30000 }); } },
-  { id: "05", caption: "ROC-AUC 0.708 · 재현율 0.476", narration: "검증 결과 ROC 에이유씨는 영 점 칠공팔, 재현율은 영 점 사칠육입니다. 정확도만 보면 놓치기 쉬운 이탈 고객도 함께 확인합니다.", action: async (page) => { await page.locator("#results").scrollIntoViewIfNeeded(); } },
-  { id: "06", caption: "혼동행렬과 검증 조건 검토", narration: "세부 결과를 열면 혼동행렬과 검증 조건을 볼 수 있습니다. 예측 기여도는 원인이나 정책 효과를 뜻하지 않습니다.", action: async (page) => { await page.getByText("세부 결과와 검증 보기").click(); await page.mouse.wheel(0, 340); } },
-  { id: "07", caption: "지시 예: 이탈예측 후 AUC와 재현율 설명", narration: "대화형 도구에는 가상 고객 이탈 예제를 실행하고, 검증자료의 에이유씨와 재현율, 혼동행렬을 설명해 달라고 지시할 수 있습니다.", action: async (page) => { await page.mouse.wheel(0, -430); } },
-  { id: "08", caption: "회귀분석도 같은 방식으로 실행", narration: "다른 질문이라면 회귀분석을 고르고 같은 방식으로 실행합니다. 실제 업무에서는 자체 CSV 파일과 변수도 선택할 수 있습니다.", action: async (page) => { await page.getByRole("button", { name: "회귀분석" }).click(); await page.getByRole("button", { name: "예제 분석 실행" }).click(); await page.getByText("분석과 검증이 완료되었습니다.").waitFor({ timeout: 30000 }); } },
-  { id: "09", caption: "앱 실행하기 → 예제 데이터 → 예제 분석 실행", narration: "포털에서 앱 실행하기를 누르고 로그인한 뒤, 예제 데이터를 선택해 직접 시험해 보세요. 분석 결과는 연구 설계와 데이터 품질을 함께 검토해야 합니다.", action: async (page) => { await page.mouse.wheel(0, -700); } },
+  { id: "01", caption: "MethodIQ Analysis Studio | 조사 연구자의 분석 작업", narration: "MethodIQ Analysis Studio는 조사 연구자와 정책 평가 담당자가 SPSS 자료를 올리고, 클라이언트 질문에 맞는 분석을 실행하는 앱입니다.", action: async () => {} },
+  { id: "02", caption: "가상 응답자 120명의 SPSS 파일 업로드", narration: "지금은 가상 응답자 백이십 명의 SPSS 파일을 사용합니다. 앱이 변수 라벨과 응답값 라벨을 읽어 분석 준비 상태를 보여 줍니다.", action: async (page) => { await page.locator("#spss-file").setInputFiles(sampleSav); await page.getByText("synthetic-survey.sav · 120행 · 4개 변수").waitFor({ timeout: 30000 }); await page.locator("#file-summary").scrollIntoViewIfNeeded(); } },
+  { id: "03", caption: "질문: 만족도는 충성도 점수와 관련이 있는가?", narration: "클라이언트 질문을 자연어로 적습니다. 어떤 요인이 결과와 관련되는지 선택하고, 앱이 추천한 변수 역할을 연구자가 다시 확인합니다.", action: async (page) => { await page.locator("#research-question").fill("만족도는 충성도 점수와 관련이 있는가?"); await page.locator("#analysis-task").selectOption("regression"); await page.locator("#outcome-column").selectOption("loyalty"); await page.locator("#feature-columns").selectOption(["satisfaction"]); await page.locator("#question-box").scrollIntoViewIfNeeded(); } },
+  { id: "04", caption: "충성도=결과 · 만족도=설명변수 · 역할 확인", narration: "충성도를 결과변수, 만족도를 설명변수로 정했습니다. 질문과 분석법, 변수 역할을 확인한 뒤 실행합니다.", action: async (page) => { await page.locator("#analysis-confirm").check(); await page.getByRole("button", { name: "내 데이터 분석 실행" }).click(); await page.getByText("분석과 검증이 완료되었습니다.").waitFor({ timeout: 30000 }); await page.locator("#results").scrollIntoViewIfNeeded(); } },
+  { id: "05", caption: "실제 계산 결과: R² 0.091 · 검증 WARN", narration: "합성 설문 분석의 결정계수는 영 점 공구일입니다. 검증은 주의 상태로 표시됐고, 영향 관측치와 잔차 진단을 추가로 보라고 안내합니다.", action: async (page) => { await page.locator("#results").scrollIntoViewIfNeeded(); } },
+  { id: "06", caption: "AI 지시: 검증 결과를 읽고 보고서를 작성해 줘", narration: "대화창에는 이 분석의 검증 결과를 읽고, 질문에 답하는 보고서를 작성해 달라고 지시합니다. 앱의 계산 결과를 임의로 바꾸지 않는 것이 중요합니다.", action: async (page) => { await page.getByRole("button", { name: "대화창 AI에 보고서 작성 요청" }).scrollIntoViewIfNeeded(); } },
+  { id: "07", caption: "로그인 후 예제 데이터로 바로 시험 가능", narration: "자체 자료가 없어도 예제 데이터로 바로 시험할 수 있습니다. 예제 데이터 버튼을 누르면 분석 종류별 가상 사례가 나옵니다.", action: async (page) => { await page.getByRole("button", { name: "예제 데이터" }).click(); await page.locator("#example-tabs").scrollIntoViewIfNeeded(); } },
+  { id: "08", caption: "가상 고객 800명 · 이탈 예측 실행", narration: "일반 머신러닝에서 가상 고객 팔백 명의 이탈 예제를 실행합니다. 학습 자료와 검증 자료를 나누어 예측 성능을 계산합니다.", action: async (page) => { await page.getByRole("button", { name: "일반 머신러닝" }).click(); await page.getByRole("button", { name: "예제 분석 실행" }).click(); await page.getByText("분석과 검증이 완료되었습니다.").waitFor({ timeout: 30000 }); } },
+  { id: "09", caption: "ROC-AUC 0.708 · 재현율 0.476 | 직접 체험", narration: "ROC 에이유씨는 영 점 칠공팔, 재현율은 영 점 사칠육입니다. 포털의 가상 데이터로 앱 시험하기를 눌러 로그인한 뒤 직접 실행해 보세요.", action: async (page) => { await page.locator("#results").scrollIntoViewIfNeeded(); } },
 ];
 
 function run(command, args, options = {}) {
@@ -35,6 +35,7 @@ function srtTime(sec) {
 
 await fsp.mkdir(narrationDir, { recursive: true });
 await fsp.mkdir(audioDir, { recursive: true });
+run(process.env.ANALYSIS_PYTHON ?? "D:/Git/mcp-special-analysis-tools/.venv/Scripts/python.exe", ["docs/demo-scripts/methodiq-analysis-studio/make_synthetic_sav.py", sampleSav]);
 let position = 0;
 let subtitles = "";
 const audioList = [];
@@ -43,7 +44,7 @@ for (const [index, scene] of scenes.entries()) {
   const voice = path.join(audioDir, scene.id + ".wav");
   const normalized = path.join(audioDir, scene.id + "-norm.wav");
   await fsp.writeFile(input, scene.narration, "utf8");
-  if (!fs.existsSync(voice)) run("node", ["--use-system-ca", "scripts/synthesize-speech.mjs", "--input", input, "--output", voice], { env: { ...process.env, PR_STUDIO_TTS_PROVIDER: "google", GOOGLE_TTS_SPEAKING_RATE: "0.94" } });
+  run("node", ["--use-system-ca", "scripts/synthesize-speech.mjs", "--input", input, "--output", voice], { env: { ...process.env, PR_STUDIO_TTS_PROVIDER: "google", GOOGLE_TTS_SPEAKING_RATE: "0.94" } });
   run("ffmpeg", ["-y", "-v", "error", "-i", voice, "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", normalized]);
   scene.hold = Math.max(5, duration(normalized) + 1.7);
   subtitles += String(index + 1) + "\n" + srtTime(position) + " --> " + srtTime(position + scene.hold - 0.3) + "\n" + scene.caption + "\n\n";
