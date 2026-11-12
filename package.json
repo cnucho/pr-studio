@@ -20,6 +20,7 @@
     "render:office-suite-full-demo": "node scripts/render-office-suite-full-demo.mjs",
     "render:mcp-live-usage:diagram": "node scripts/render-mcp-live-usage-demo.mjs --scenario docs/demo-scripts/live-usage-demos/fixtures/diagram-live-usage.json",
     "record:mcp-live-usage:gwriter": "node scripts/record-gwriter-mcp-handoff.mjs",
+    "compose:mcp-live-usage:gwriter": "node scripts/compose-gwriter-mcp-live-usage.mjs --scenario docs/demo-scripts/live-usage-demos/fixtures/gwriter-live-usage-v2.json --editor-video out/live-usage-demos/gwriter-mcp-live-usage/gwriter-mcp-live-usage-ko.mp4",
     "render:questionnaire-recovery-demo": "node scripts/render-questionnaire-recovery-demo.mjs",
     "render:youtube-ethnography-demo": "node scripts/render-youtube-ethnography-studio-demo.mjs",
     "render:academy:premium": "node scripts/render-premium-academy-demo.mjs",

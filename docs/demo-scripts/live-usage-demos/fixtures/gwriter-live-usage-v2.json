@@ -1,0 +1,47 @@
+{
+  "version": "2.0",
+  "id": "gwriter-mcp-live-usage-v2",
+  "title": "gWriter MCP 실제 사용 기록",
+  "subtitle": "대화 요청, 사람 편집, MCP 결과 회수",
+  "recordedAt": "2026-11-12T14:49:37.870Z",
+  "source": {
+    "connector": "MethodIQ Tools Production Central",
+    "workspace": "cho9900 중앙 로그인",
+    "editSessionId": "ges-LlDHViXiWC-ct4f1TEsZMXhRDQDIIrBE",
+    "finalRevision": "pv-1794494977870-xkp0ac",
+    "documentSha256": "b63db92ba69014d353967a1af7eb49eb2074d03f9621667c9f1e07b3f989a717"
+  },
+  "events": [
+    {
+      "segment": "intro",
+      "role": "user",
+      "text": "분기별 고객 만족도 요약 초안을 gWriter에서 열어 줘. 사람이 편집을 끝내면 수정본을 다시 읽어 줘."
+    },
+    {
+      "segment": "intro",
+      "role": "assistant",
+      "text": "gWriter MCP로 실제 편집 세션을 만들고 편집기를 열겠습니다."
+    },
+    {
+      "segment": "intro",
+      "role": "tool",
+      "tool": "gwriter_start_gwriter_edit",
+      "status": "success",
+      "input": "분기별 고객 만족도 요약 · Markdown 초안",
+      "result": "편집 세션 준비 완료 · 외부 GPT Editor 열기"
+    },
+    {
+      "segment": "outro",
+      "role": "tool",
+      "tool": "gwriter_get_gwriter_edit_result",
+      "status": "success",
+      "input": "완료된 편집 세션 결과 조회",
+      "result": "completed · 최종 Markdown 111자 · SHA-256 b63db92b…"
+    },
+    {
+      "segment": "outro",
+      "role": "assistant",
+      "text": "수정본을 회수했습니다. 마지막 문장은 표본 추론이나 인과관계로 해석하지 않는다는 제한으로 바뀌었습니다."
+    }
+  ]
+}
