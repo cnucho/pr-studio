@@ -34,10 +34,23 @@ precomputed analysis.
 3. Open both watch pages and verify playback, title, description, visibility,
    captions, and links. Record the two video IDs, watch URLs, publication time,
    and visible result in this handoff and `youtube-metadata-ko.md`.
-4. The CI Portal `/demos` cards currently use the *same* release MP4 assets.
-   Once YouTube is verified, update those two cards to the two YouTube IDs if
-   desired. Keep the example and manual links. The MethodIQ portal card should
-   link to the CI demo guide, so one verified video version serves both portals.
+4. The CI Portal `/demos` cards and the MethodIQ app card currently use the
+   *same* release MP4 assets. After verifying YouTube, replace the video links
+   in both portals with the two watch URLs if desired. Keep the example,
+   manual, and handoff links; check both portal cards after deployment.
+
+## Portal publication verified on 2026-11-15
+
+- CI Portal: https://ci.methodiq.tools/demos#lca-mca-introduction and
+  https://ci.methodiq.tools/demos#lca-mca-follow-along-tutorial . Both videos
+  played in the live browser. The tutorial card links to the synthetic ZIP,
+  questionnaire, manual, and this upload handoff.
+- MethodIQ Portal: https://methodiq.tools/apps . The LCA–MCA card has an
+  `예제·영상 안내` button to the CI demo and, under `자세히`, links to both exact
+  release MP4 files. This was verified after production Railway deployment
+  `f9c9c5e8-3343-4353-b5d3-f4898b0152bd` succeeded.
+- CI Portal registration commit: `feb0d36`; MethodIQ Portal merge commit:
+  `b781c27` (PR #8). These portal links do not imply YouTube publication.
 
 ## Verification already done
 
