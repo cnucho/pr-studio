@@ -31,4 +31,5 @@ published release carries the videos, SRT captions, and data package.
 
 YouTube Studio is the publication path; this repository does not contain an
 in-app YouTube uploader. Titles and descriptions are in
-`youtube-metadata-ko.md`. Record the final YouTube URLs there after upload.
+`youtube-metadata-ko.md`. The exact-file and channel continuation is in
+`YOUTUBE_UPLOAD_HANDOFF.md`. Record the final YouTube URLs there after upload.
