@@ -1,0 +1,13 @@
+{
+  "kind": "introduction",
+  "title": "LCA·MCA 분석 앱 소개",
+  "example_version": "tutorial-v1",
+  "scenes": [
+    {"id":"01","image":"intro-home.png","title":"연구문제에서 시작","caption":"응답 유형과 범주 관계를 각각 분석합니다","narration":"LCA MCA 분석 앱은 연구문제에서 시작해 자료를 점검하고, 실제 계산 결과를 검토한 뒤 보고서를 만드는 작업대입니다. 지금 보이는 화면은 실제 앱입니다.","hold":1.5},
+    {"id":"02","image":"intro-example.png","title":"직접 따라 할 가상자료","caption":"1,800명 · 21변수 · 완전 합성 설문","narration":"처음 사용한다면 공개된 가상 이동 설문을 내려받으세요. 천팔백 명, 스물한 개 변수의 완전 합성자료이며, 분석 결과는 파일에 들어 있지 않습니다.","hold":2.0},
+    {"id":"03","image":"tutorial-lca-question.png","title":"LCA는 응답 유형","caption":"질문과 지표를 확인한 뒤 잠재유형을 탐색","narration":"LCA에서는 응답자의 이동 태도 유형을 묻습니다. 여덟 개 태도 문항을 지표로 고르고, 모형은 화면에서 새로 적합합니다.","hold":1.8},
+    {"id":"04","image":"tutorial-lca-result.png","title":"결과는 후보부터","caption":"수렴 · BIC · 경고를 보고 연구자가 선택","narration":"계층 수는 앱이 확정하지 않습니다. 성공한 실행과 비 아이 씨 후보를 확인하고, 수렴하지 않은 실행은 선택 대상에서 제외합니다.","hold":2.4},
+    {"id":"05","image":"tutorial-mca-result.png","title":"MCA는 범주 관계","caption":"별도 분석으로 차원·범주 좌표·지도를 확인","narration":"MCA는 별도 경로입니다. 이동 서비스 선택 범주가 함께 나타나는 구조를 차원과 범주 지도로 봅니다. 이 지도는 원인이나 예측의 증거가 아닙니다.","hold":2.6},
+    {"id":"06","image":"intro-report.png","title":"검토 후 보고서","caption":"질문·문항 라벨·분석 준비 검토 → DOCX","narration":"모형 승인과 질문, 문항 라벨, 분석 준비의 검토 기록이 있어야 최종 워드 보고서를 받을 수 있습니다. 탐색 결과와 최종 문서는 구분합니다.","hold":2.0}
+  ]
+}
